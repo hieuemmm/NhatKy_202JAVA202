@@ -65,6 +65,7 @@ public class NhatKyDAO {
         }
         return NhatKys;
     }
+
     public NhatKy getNhatKyByMaNhatKy(int MNK) throws ClassNotFoundException, SQLException {
         Connection connection = getJDBCConnection();
         String Sql = "SELECT * FROM NhatKy WHERE MaNhatKy = ?";
@@ -85,7 +86,29 @@ public class NhatKyDAO {
         }
         return null;
     }
-    public boolean getNhatKyByTenNhatKy(NhatKy NK,NguoiDung ND) throws ClassNotFoundException, SQLException {
+
+    public NhatKy getNhatKyByTenNhatKy(String TenNhatKy) throws ClassNotFoundException, SQLException {
+        Connection connection = getJDBCConnection();
+        String Sql = "SELECT * FROM NhatKy WHERE TenNhatKy = ?";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(Sql);
+            preparedStatement.setString(1, TenNhatKy);
+            ResultSet rs = preparedStatement.executeQuery();
+            rs.first();
+            NhatKy nhatky = new NhatKy();
+            nhatky.setMaNhatKy(rs.getInt("MaNhatKy"));
+            nhatky.setMaThuMuc(rs.getInt("MaThuMuc"));
+            nhatky.setTenNhatKy(rs.getString("TenNhatKy"));
+            nhatky.setNgayTao(rs.getString("NgayTao"));
+            nhatky.setNgayChinhSuaCuoiCung(rs.getString("NgayChinhSuaCuoiCung"));
+            nhatky.setNoiDung(rs.getString("NoiDung"));
+            return nhatky;
+        } catch (SQLException e) {
+        }
+        return null;
+    }
+
+    public boolean getNhatKyByTenNhatKy(NhatKy NK, NguoiDung ND) throws ClassNotFoundException, SQLException {
         Connection connection = getJDBCConnection();
         String Sql = "SELECT count(*) AS DemNhatKy FROM NguoiDung"
                 + " INNER JOIN ThuMuc ON NguoiDung.TaiKhoan = ThuMuc.TaiKhoan"
@@ -97,13 +120,14 @@ public class NhatKyDAO {
             preparedStatement.setString(2, ND.getTaiKhoan());
             ResultSet rs = preparedStatement.executeQuery();
             rs.first();
-            if (rs.getInt("DemNhatKy") > 0){
+            if (rs.getInt("DemNhatKy") > 0) {
                 return true;
             }
         } catch (SQLException e) {
         }
         return false;
     }
+
     public boolean addNhatKy(NhatKy nhatky) throws ClassNotFoundException, SQLException {
         Connection connection = getJDBCConnection();
         String Sql = "INSERT INTO NhatKy (`MaThuMuc`, `TenNhatKy`, `NgayTao`,`NgayChinhSuaCuoiCung`,`NoiDung`) VALUES (?, ?, ?, ?, ?);";
@@ -144,6 +168,19 @@ public class NhatKyDAO {
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(Sql);
             preparedStatement.setInt(1, NK.getMaNhatKy());
+            preparedStatement.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+        }
+        return false;
+    }
+
+    public boolean DeleteNhatKyByMaThuMuc(ThuMuc thumuc) throws ClassNotFoundException, SQLException {
+        Connection connection = getJDBCConnection();
+        String Sql = "DELETE FROM NhatKy WHERE MaThuMuc = ?";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(Sql);
+            preparedStatement.setInt(1, thumuc.getMaThuMuc());
             preparedStatement.executeUpdate();
             return true;
         } catch (SQLException e) {

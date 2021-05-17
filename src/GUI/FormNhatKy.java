@@ -12,6 +12,7 @@ import NhatKy.NguoiDung;
 import NhatKy.NhatKy;
 import NhatKy.ThuMuc;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
@@ -20,11 +21,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.sql.Date;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
@@ -39,9 +43,11 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.text.DefaultCaret;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.undo.UndoManager;
 import sun.applet.Main;
 
 /**
@@ -50,10 +56,12 @@ import sun.applet.Main;
  */
 public class FormNhatKy extends javax.swing.JFrame {
 
-    private final ThuMucServices thumucServices;
-    private NhatKyServices nhatkyServices;
-    private final NguoiDung ND;
-    private static NhatKy NK;
+    public static List<NhatKy> NhatKys;
+    public static DefaultTableModel defaultTableModel;
+    public final ThuMucServices thumucServices;
+    public final NhatKyServices nhatkyServices;
+    public static NguoiDung ND;
+    public static NhatKy NK;
     private static ThuMuc TM;
 
     /**
@@ -67,17 +75,20 @@ public class FormNhatKy extends javax.swing.JFrame {
         //this.setBackground(Color.WHITE);
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         initComponents();
-        ZoomjTextArea();
+        CreateTableFind();
+        //ZoomjTextArea();
         centerFrame();
         ND = nguoidung;
         TM = new ThuMuc();
         NK = new NhatKy();
+        TM.setMaThuMuc(1);
         thumucServices = new ThuMucServices();
         nhatkyServices = new NhatKyServices();
+        this.setResizable(false);
         LoadJtreeThuMuc();
+        SetCusor();
         jTextAreaNoiDung.setLineWrap(true);
         jLabelTrangThaiFIle.setVisible(false);
-        jTextFieldNhapTenFolder.setEditable(false);
         //Sự kiện Tạo Nhật Ký
         SuKienTaoMoiNhatKy();
         //Sự kiện Lưu Lại
@@ -85,41 +96,13 @@ public class FormNhatKy extends javax.swing.JFrame {
         //Sự kiện Xóa Nhật Ký
         SukienXoaThuMucHoacNhatKy();
         //Sự kiện New Folder
-        Action NewFolder;
-        NewFolder = new AbstractAction("New Folder") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                jLabelTrangThaiFIle.setText("NewFolder");
-                jTextFieldNhapTenFolder.setEditable(true);
-                jTextFieldNhapTenFolder.setText("");
-                jTextFieldNhapTenFolder.requestFocus();//or inWindow
-                System.out.println("new folder");
-            }
-        };
-        String keyNewFolder = "New Folder";
-        jButtonNewFolder.setAction(NewFolder);
-        //NewFolder.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_S);
-        jButtonNewFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.SHIFT_DOWN_MASK), keyNewFolder);
-        jButtonNewFolder.getActionMap().put(keyNewFolder, NewFolder);
+        SuKienNewFolder();
         //Rename Folder
-        Action RenameFolder;
-        RenameFolder = new AbstractAction("Rename Folder") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("rename");
-                if (jLabelTrangThaiFIle.getText().equals("EditForder")) {
-                    jTextFieldNhapTenFolder.setEditable(true);
-                    jTextFieldNhapTenFolder.requestFocus();//or inWindow
-                }
-            }
-        };
-        String keyRenameFolder = "Rename Folder";
-
-        jButtonReNameFolder.setAction(RenameFolder);
-        jButtonReNameFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), keyRenameFolder);
-
-        jButtonReNameFolder.getActionMap().put(keyRenameFolder, RenameFolder);
-
+        SuKienRenameFolder();
+        //Tim Kiem
+        SuKienTimKiem();
+        //Giá trị mặc định 
+        GiaTriMacDinh();
     }
 
     private void LoadJtreeThuMuc() throws ClassNotFoundException, SQLException {
@@ -139,31 +122,28 @@ public class FormNhatKy extends javax.swing.JFrame {
         DefaultTreeModel defaultTreeModel = new DefaultTreeModel(RootNode);
         jTreeThuMuc.setModel(defaultTreeModel);
     }
-
-    private void centerFrame() {
-        Dimension windowSize = getSize();
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        Point centerPoint = ge.getCenterPoint();
-
-        int dx = centerPoint.x - windowSize.width / 2;
-        int dy = centerPoint.y - windowSize.height / 2;
-        setLocation(dx, dy);
+    private void SetCusor(){
+       jButtonLuuLai.setCursor(new Cursor(Cursor.HAND_CURSOR));
+       jButtonNewFile.setCursor(new Cursor(Cursor.HAND_CURSOR));
+       jButtonNewFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
+       jButtonReNameFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
+       jButtonTimKiem.setCursor(new Cursor(Cursor.HAND_CURSOR));
+       jButtonXoa.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
-
+    
     private void SuKienTaoMoiNhatKy() {
         Action NewFileNhatKy;
-        NewFileNhatKy = new AbstractAction("Tạo Nhật Ký") {
+        NewFileNhatKy = new AbstractAction("New Diary") {
             @Override
             public void actionPerformed(ActionEvent e) {
                 jLabelTrangThaiFIle.setText("NewFile");
-                jTextFieldNhapTenNhatKy.setText("");
-                jTextAreaNoiDung.setText("");
+                GiaTriKhiChonNewFile();
                 jLabelNgayTao.setText("Ngày tạo: " + LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
                 jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào");
-                jTextFieldNhapTenNhatKy.requestFocus();//or inWindow
+                jLabelThongTinFile.setText("Cách đây 00 ngày.");
             }
         };
-        String key = "Tạo Nhật Ký";
+        String key = "New Diary";
         jButtonNewFile.setAction(NewFileNhatKy);
         //NewFileNhatKy.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_S);
         jButtonNewFile.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.CTRL_DOWN_MASK), key);
@@ -172,49 +152,53 @@ public class FormNhatKy extends javax.swing.JFrame {
 
     private void SuKienLuuNhatKy() {
         Action SaveFile;
-        SaveFile = new AbstractAction("Lưu lại") {
+        SaveFile = new AbstractAction("Save") {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (jLabelTrangThaiFIle.getText().equals("NewFile")) {
-                    System.out.println("Tạo mới file...");
-                    if (TM.getMaThuMuc() != -1) {//đã chọn thư mục
-                        NK.setMaThuMuc(TM.getMaThuMuc());
-                        if (!jTextFieldNhapTenNhatKy.getText().equals("")) {
-                            NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
-                            NK.setNgayTao(jLabelNgayTao.getText().substring(10, jLabelNgayTao.getText().length()));
-                            NK.setNgayChinhSuaCuoiCung(jLabelSuaLanCuoi.getText().substring(14, jLabelSuaLanCuoi.getText().length()));
-                            NK.setNoiDung(jTextAreaNoiDung.getText());
-                            try {
-                                if (nhatkyServices.KiemTraNhatKyTonTai(NK, ND)) {
-                                    JOptionPane.showMessageDialog(FormNhatKy.this, "Tên nhật ký đã tồn tại", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
-                                } else {
-                                    //đã lưu thành công return true;
-                                    if (nhatkyServices.ThemNhatKyMoi(NK)) {
-                                        jLabelTrangThaiFIle.setText("");
-                                        LoadJtreeThuMuc();
-                                        JOptionPane.showMessageDialog(FormNhatKy.this, "Lưu thành công.", "Tạo Mới nhật ký", JOptionPane.DEFAULT_OPTION);
-                                    } else {
-                                        JOptionPane.showMessageDialog(FormNhatKy.this, "Lưu thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
-                                    }
-                                }
-                            } catch (ClassNotFoundException | SQLException ex) {
-                                Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(FormNhatKy.this, "Chưa nhập tên nhật ký", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
-                        }
-
+                    NK.setMaThuMuc(TM.getMaThuMuc());
+                    if (jTextFieldNhapTenNhatKy.getText().equals("")) {
+                        NK.setTenNhatKy(jLabelNgayTao.getText());
                     } else {
-                        JOptionPane.showMessageDialog(FormNhatKy.this, "Chưa chọn thư mục lưu", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
+                        NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
+                    }
+                    NK.setNgayTao(jLabelNgayTao.getText().substring(10, jLabelNgayTao.getText().length()));
+                    NK.setNgayChinhSuaCuoiCung(jLabelSuaLanCuoi.getText().substring(14, jLabelSuaLanCuoi.getText().length()));
+                    NK.setNoiDung(jTextAreaNoiDung.getText());
+                    try {
+                        if (nhatkyServices.KiemTraNhatKyTonTai(NK, ND)) {
+                            JOptionPane.showMessageDialog(FormNhatKy.this, "Tên nhật ký đã tồn tại", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
+                        } else {
+                            //đã lưu thành công return true;
+                            if (nhatkyServices.ThemNhatKyMoi(NK)) {
+                                jLabelTrangThaiFIle.setText("EditFile");
+                                //selet nhật ký mới insert ra
+                                NK = nhatkyServices.getNhatKyByTenNhatKy(jTextFieldNhapTenNhatKy.getText());
+                                GiaTriKhiChonNhatKyTrenJTree();
+                                LoadNhatKy();
+                                LoadJtreeThuMuc();
+                            } else {
+                                JOptionPane.showMessageDialog(FormNhatKy.this, "Lưu thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
+                            }
+                        }
+                    } catch (ClassNotFoundException | SQLException ex) {
+                        Logger.getLogger(FormNhatKy.class
+                                .getName()).log(Level.SEVERE, null, ex);
                     }
                 } else if (jLabelTrangThaiFIle.getText().equals("EditFile")) {
-                    System.out.println("Sửa file...");
-                    NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
+                    if (jTextFieldNhapTenNhatKy.getText().equals("")) {
+
+                        NK.setTenNhatKy(jLabelNgayTao.getText());
+                    } else {
+                        NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
+                    }
                     NK.setNoiDung(jTextAreaNoiDung.getText());
                     NK.setNgayChinhSuaCuoiCung(LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
                     try {
                         if (nhatkyServices.SuaNhatKy(NK)) {
-                            JOptionPane.showMessageDialog(FormNhatKy.this, "Sửa Thành Công", "Sửa nhật ký", JOptionPane.DEFAULT_OPTION);
+                            LoadJtreeThuMuc();
+                            NK = nhatkyServices.getNhatKyByMaNhatKy(NK.getMaNhatKy());
+                            jLabelSuaLanCuoi.setText("Sửa lần cuối: " + NK.getNgayChinhSuaCuoiCung());
                         }
                     } catch (ClassNotFoundException | SQLException ex) {
                         Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
@@ -225,31 +209,33 @@ public class FormNhatKy extends javax.swing.JFrame {
                         TM.setTenThuMuc(jTextFieldNhapTenFolder.getText());
                         try {
                             if (!thumucServices.KiemTraThuMucTonTai(TM)) {
-                                //ADD THANH CONG
+                                //Thêm thư mục thnahf công
                                 thumucServices.ThemThuMuc(TM);
                                 LoadJtreeThuMuc();
+                                GiaTriMacDinh();
                             } else {
                                 JOptionPane.showMessageDialog(FormNhatKy.this, "Thư mục đã tồn tại", "New Folder", JOptionPane.WARNING_MESSAGE);
                             }
                         } catch (ClassNotFoundException | SQLException ex) {
-                            Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
+                            Logger.getLogger(FormNhatKy.class
+                                    .getName()).log(Level.SEVERE, null, ex);
                         }
                     } else {
                         JOptionPane.showMessageDialog(FormNhatKy.this, "Chưa nhập tên thư mục", "New Folder", JOptionPane.WARNING_MESSAGE);
                     }
-                } else if (jLabelTrangThaiFIle.getText().equals("EditForder")) {
+                } else if (jLabelTrangThaiFIle.getText().equals("RenameFolder")) {
                     if (!jTextFieldNhapTenFolder.getText().equals("")) {
                         TM.setTenThuMuc(jTextFieldNhapTenFolder.getText());
                         try {
                             if (!thumucServices.KiemTraThuMucTonTai(TM)) {
                                 //ADD THANH CONG
                                 thumucServices.DoiTenThuMuc(TM);
+                                GiaTriMacDinh();
                                 LoadJtreeThuMuc();
-                                jTextFieldNhapTenFolder.setEditable(false);
-                                jTextAreaNoiDung.requestFocus();
                             }
                         } catch (ClassNotFoundException | SQLException ex) {
-                            Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
+                            Logger.getLogger(FormNhatKy.class
+                                    .getName()).log(Level.SEVERE, null, ex);
                         }
                     } else {
                         JOptionPane.showMessageDialog(FormNhatKy.this, "Tên thư mục không được rỗng", "ReName Folder", JOptionPane.WARNING_MESSAGE);
@@ -257,7 +243,7 @@ public class FormNhatKy extends javax.swing.JFrame {
                 }
             }
         };
-        String keysave = "Lưu lại";
+        String keysave = "Save";
         jButtonLuuLai.setAction(SaveFile);
         jButtonLuuLai.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK), keysave);
         jButtonLuuLai.getActionMap().put(keysave, SaveFile);
@@ -265,48 +251,124 @@ public class FormNhatKy extends javax.swing.JFrame {
 
     private void SukienXoaThuMucHoacNhatKy() {
         Action DeleteFileNhatKy;
-        DeleteFileNhatKy = new AbstractAction("Xóa Nhật Ký") {
+        DeleteFileNhatKy = new AbstractAction("Delete") {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int TraLoi = JOptionPane.showConfirmDialog(null, "Bạn thực sự muốn xóa?", "Xóa Nhật Ký", JOptionPane.YES_NO_OPTION);
-                if (TraLoi == JOptionPane.OK_OPTION) {
-                    try {
-                        if (nhatkyServices.XoaMotNhatKy(NK)) {
-                            JOptionPane.showMessageDialog(FormNhatKy.this, "Xóa thành công.", "Xóa nhật ký", JOptionPane.DEFAULT_OPTION);
-                            jLabelTrangThaiFIle.setText("");
-                            jLabelTrangThaiFIle.setText("NewFile");
-                            jTextFieldNhapTenNhatKy.setText("");
-                            jTextAreaNoiDung.setText("");
-                            jLabelNgayTao.setText("Ngày tạo: " + LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
-                            jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào");
-                            jTextFieldNhapTenNhatKy.requestFocus();//or inWindow
-                            LoadJtreeThuMuc();
-                        } else {
-                            JOptionPane.showMessageDialog(FormNhatKy.this, "Xóa thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.DEFAULT_OPTION);
+                if (jLabelTrangThaiFIle.getText().equals("EditFile")) {
+                    int TraLoi = JOptionPane.showConfirmDialog(null, "Bạn thực sự muốn xóa?", "Xóa Nhật Ký", JOptionPane.YES_NO_OPTION);
+                    if (TraLoi == JOptionPane.OK_OPTION) {
+                        try {
+                            if (nhatkyServices.XoaMotNhatKy(NK)) {
+                                GiaTriMacDinh();
+                                LoadJtreeThuMuc();
+                            } else {
+                                JOptionPane.showMessageDialog(FormNhatKy.this, "Xóa thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.DEFAULT_OPTION);
+                            }
+                        } catch (ClassNotFoundException | SQLException ex) {
+                            Logger.getLogger(FormNhatKy.class
+                                    .getName()).log(Level.SEVERE, null, ex);
                         }
+                    }
+                } else if (jLabelTrangThaiFIle.getText().equals("EditFolder")) {
+                    try {
+                        //Nếu có nhật ký trong thư mục
+                        if (nhatkyServices.getAllNhatKyByMaThuMuc(TM).size() > 0) {
+                            int TraLoi = JOptionPane.showConfirmDialog(null, "Tất cả nhật ký trong thư mục này sẽ bị xóa.", "Xóa Thư Mục", JOptionPane.YES_NO_OPTION);
+                            if (TraLoi == JOptionPane.OK_OPTION) {
+                                try {
+                                    if (nhatkyServices.XoaNhieuNhatKy(TM) || thumucServices.XoaThuMuc(TM)) {
+                                        JOptionPane.showMessageDialog(FormNhatKy.this, "Xóa thành công.", "Xóa Thư Mục", JOptionPane.DEFAULT_OPTION);
+                                        GiaTriMacDinh();
+                                        LoadJtreeThuMuc();
+                                    } else {
+                                        JOptionPane.showMessageDialog(FormNhatKy.this, "Xóa thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.DEFAULT_OPTION);
+                                    }
+                                } catch (ClassNotFoundException | SQLException ex) {
+                                    Logger.getLogger(FormNhatKy.class
+                                            .getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                        }else{
+                            thumucServices.XoaThuMuc(TM);
+                            GiaTriMacDinh();
+                            LoadJtreeThuMuc();
+                        }
+                    } catch (ClassNotFoundException | SQLException ex) {
+                        Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+
+                }
+
+            }
+        };
+        String keyDel = "Delete";
+        jButtonXoa.setAction(DeleteFileNhatKy);
+        jButtonXoa.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, KeyEvent.CTRL_DOWN_MASK), keyDel);
+        jButtonXoa.getActionMap().put(keyDel, DeleteFileNhatKy);
+    }
+
+    private void SuKienNewFolder() {
+        Action NewFolder;
+        NewFolder = new AbstractAction("New Folder") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jLabelTrangThaiFIle.setText("NewFolder");
+                GiaTriKhiChonNewFolder();
+            }
+        };
+        String keyNewFolder = "New Folder";
+        jButtonNewFolder.setAction(NewFolder);
+        //NewFolder.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_S);
+        jButtonNewFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.SHIFT_DOWN_MASK), keyNewFolder);
+        jButtonNewFolder.getActionMap().put(keyNewFolder, NewFolder);
+    }
+
+    private void SuKienRenameFolder() {
+        Action RenameFolder;
+        RenameFolder = new AbstractAction("Rename Folder") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("rename");
+                if (jLabelTrangThaiFIle.getText().equals("EditFolder")) {
+                    GiaTriKhiChonRenameFolder();
+                }
+            }
+        };
+        String keyRenameFolder = "Rename Folder";
+        jButtonReNameFolder.setAction(RenameFolder);
+        jButtonReNameFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), keyRenameFolder);
+        jButtonReNameFolder.getActionMap().put(keyRenameFolder, RenameFolder);
+    }
+
+    private void SuKienTimKiem() {
+        Action FindNhatKy;
+        FindNhatKy = new AbstractAction("Find") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (jTextFieldTimKiem.getText().equals("")) {
+                    jTextFieldTimKiem.requestFocus();
+                } else {
+                    try {
+                        //Danh Sách kết quả tìm thấy
+//                        jTextFieldTimKiem.setText(String.valueOf(NhatKys.size()));
+                        List<NhatKy> NhatKys = nhatkyServices.TimKiemNangCao(jTextFieldTimKiem.getText(), ND);
+                        if (NhatKys.size() > 0) {
+                            TableFind.setTableData(NhatKys);
+                            jPanel6.setVisible(false);
+                        } else {
+                            JOptionPane.showMessageDialog(FormNhatKy.this, "Không tìm thấy kết quả nào");
+                        }
+
                     } catch (ClassNotFoundException | SQLException ex) {
                         Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
             }
         };
-        String keyDel = "Xóa Nhật Ký";
-        jButtonXoa.setAction(DeleteFileNhatKy);
-        jButtonXoa.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, KeyEvent.CTRL_DOWN_MASK), keyDel);
-        jButtonXoa.getActionMap().put(keyDel, DeleteFileNhatKy);
-    }
-
-    private void ZoomjTextArea() {
-        jTextAreaNoiDung.addMouseWheelListener(mouseWheelEvent -> {
-            if (mouseWheelEvent.isControlDown()) {
-                jTextAreaNoiDung.setFont(new Font(
-                        jTextAreaNoiDung.getFont().getFontName(),
-                        jTextAreaNoiDung.getFont().getStyle(),
-                        mouseWheelEvent.getUnitsToScroll() > 0
-                        ? jTextAreaNoiDung.getFont().getSize() - 2
-                        : jTextAreaNoiDung.getFont().getSize() + 2));
-            }
-        });
+        String keyFind = "Find";
+        jButtonTimKiem.setAction(FindNhatKy);
+        jButtonTimKiem.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK), keyFind);
+        jButtonTimKiem.getActionMap().put(keyFind, FindNhatKy);
     }
 
     @SuppressWarnings("unchecked")
@@ -315,29 +377,28 @@ public class FormNhatKy extends javax.swing.JFrame {
 
         jLabelTrangThaiFIle = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
-        jButtonNewFile = new javax.swing.JButton();
-        jTextFieldTìmKiem = new javax.swing.JTextField();
-        jButtonTimKiem = new javax.swing.JButton();
-        jButtonXoa = new javax.swing.JButton();
-        jPanel2 = new javax.swing.JPanel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jTreeThuMuc = new javax.swing.JTree();
         jPanel3 = new javax.swing.JPanel();
         jTextFieldNhapTenFolder = new javax.swing.JTextField();
         jButtonNewFolder = new javax.swing.JButton();
         jButtonLuuLai = new javax.swing.JButton();
         jButtonReNameFolder = new javax.swing.JButton();
-        jPanel4 = new javax.swing.JPanel();
-        jLabelThongTinFile3 = new javax.swing.JLabel();
-        jLabelThongTinFile = new javax.swing.JLabel();
-        jLabelNgayTao = new javax.swing.JLabel();
-        jLabelSuaLanCuoi = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTreeThuMuc = new javax.swing.JTree();
+        jButtonNewFile = new javax.swing.JButton();
+        jButtonXoa = new javax.swing.JButton();
+        jTextFieldTimKiem = new javax.swing.JTextField();
+        jButtonTimKiem = new javax.swing.JButton();
         jPanel5 = new javax.swing.JPanel();
         jTextFieldNhapTenNhatKy = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
         jPanel6 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTextAreaNoiDung = new javax.swing.JTextArea();
+        jPanel4 = new javax.swing.JPanel();
+        jLabelThongTinFile3 = new javax.swing.JLabel();
+        jLabelThongTinFile = new javax.swing.JLabel();
+        jLabelNgayTao = new javax.swing.JLabel();
+        jLabelSuaLanCuoi = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -349,60 +410,32 @@ public class FormNhatKy extends javax.swing.JFrame {
         jMenuItem6 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setBackground(new java.awt.Color(255, 255, 255));
 
         jLabelTrangThaiFIle.setEnabled(false);
 
-        jPanel1.setMaximumSize(new java.awt.Dimension(100, 100));
+        jPanel1.setBackground(new java.awt.Color(241, 243, 229));
 
-        jButtonNewFile.setText("New Diary");
-        jButtonNewFile.setToolTipText("Ctrl + N");
-        jButtonNewFile.addActionListener(new java.awt.event.ActionListener() {
+        jPanel3.setBackground(new java.awt.Color(241, 243, 229));
+
+        jButtonNewFolder.setText("New Folder");
+        jButtonNewFolder.setToolTipText("Shift + N");
+        jButtonNewFolder.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonNewFileActionPerformed(evt);
+                jButtonNewFolderActionPerformed(evt);
             }
         });
 
-        jTextFieldTìmKiem.setMinimumSize(new java.awt.Dimension(34, 20));
-        jTextFieldTìmKiem.setPreferredSize(new java.awt.Dimension(34, 20));
+        jButtonLuuLai.setText("Save");
+        jButtonLuuLai.setToolTipText("Ctrl + S");
 
-        jButtonTimKiem.setText("Find");
-        jButtonTimKiem.setToolTipText("Ctrl+ F");
-        jButtonTimKiem.addActionListener(new java.awt.event.ActionListener() {
+        jButtonReNameFolder.setText("Rename Folder");
+        jButtonReNameFolder.setToolTipText("F2");
+        jButtonReNameFolder.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonTimKiemActionPerformed(evt);
+                jButtonReNameFolderActionPerformed(evt);
             }
         });
-
-        jButtonXoa.setText("Delete");
-        jButtonXoa.setToolTipText("Ctrl + Del");
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                .addGap(0, 0, 0)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jTextFieldTìmKiem, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonTimKiem, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jButtonXoa, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonNewFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldTìmKiem, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButtonTimKiem, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButtonNewFile, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButtonXoa, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)))
-        );
 
         javax.swing.tree.DefaultMutableTreeNode treeNode1 = new javax.swing.tree.DefaultMutableTreeNode("root");
         javax.swing.tree.DefaultMutableTreeNode treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("Nhật Ký của tôi");
@@ -451,35 +484,25 @@ public class FormNhatKy extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(jTreeThuMuc);
 
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addGap(0, 0, 0)
-                .addComponent(jScrollPane1))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 302, Short.MAX_VALUE)
-        );
-
-        jButtonNewFolder.setText("New Folder");
-        jButtonNewFolder.setToolTipText("Shift + N");
-        jButtonNewFolder.addActionListener(new java.awt.event.ActionListener() {
+        jButtonNewFile.setText("New Diary");
+        jButtonNewFile.setToolTipText("Ctrl + N");
+        jButtonNewFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonNewFolderActionPerformed(evt);
+                jButtonNewFileActionPerformed(evt);
             }
         });
 
-        jButtonLuuLai.setText("Save");
-        jButtonLuuLai.setToolTipText("Ctrl + S");
+        jButtonXoa.setText("Delete");
+        jButtonXoa.setToolTipText("Ctrl + Del");
 
-        jButtonReNameFolder.setText("Rename Folder");
-        jButtonReNameFolder.setToolTipText("F2");
-        jButtonReNameFolder.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldTimKiem.setMinimumSize(new java.awt.Dimension(34, 20));
+        jTextFieldTimKiem.setPreferredSize(new java.awt.Dimension(34, 20));
+
+        jButtonTimKiem.setText("Find");
+        jButtonTimKiem.setToolTipText("Ctrl+ F");
+        jButtonTimKiem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonReNameFolderActionPerformed(evt);
+                jButtonTimKiemActionPerformed(evt);
             }
         });
 
@@ -494,11 +517,30 @@ public class FormNhatKy extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButtonNewFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 116, javax.swing.GroupLayout.PREFERRED_SIZE))
             .addComponent(jTextFieldNhapTenFolder)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel3Layout.createSequentialGroup()
+                .addComponent(jTextFieldTimKiem, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButtonTimKiem, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel3Layout.createSequentialGroup()
+                .addComponent(jButtonXoa, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButtonNewFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(2, 2, 2)
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jTextFieldTimKiem, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonTimKiem, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonNewFile, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonXoa, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jTextFieldNhapTenFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -508,39 +550,7 @@ public class FormNhatKy extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jLabelThongTinFile3.setText("Thông tin nhật ký:");
-
-        jLabelThongTinFile.setText("Cách đây 10 ngày");
-
-        jLabelNgayTao.setText("12/05/2020 17:31 PM");
-
-        jLabelSuaLanCuoi.setText("Sửa lần cuối: 12/05/2020 17:31 PM");
-
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabelThongTinFile)
-                    .addComponent(jLabelNgayTao)
-                    .addComponent(jLabelSuaLanCuoi)
-                    .addComponent(jLabelThongTinFile3))
-                .addContainerGap(111, Short.MAX_VALUE))
-        );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addComponent(jLabelThongTinFile3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jLabelThongTinFile)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabelNgayTao)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabelSuaLanCuoi)
-                .addGap(0, 11, Short.MAX_VALUE))
-        );
+        jPanel5.setBackground(new java.awt.Color(241, 243, 229));
 
         jLabel1.setText("Name Diary :");
 
@@ -549,11 +559,10 @@ public class FormNhatKy extends javax.swing.JFrame {
         jPanel5Layout.setHorizontalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(0, 0, 0)
                 .addComponent(jLabel1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
-                .addComponent(jTextFieldNhapTenNhatKy, javax.swing.GroupLayout.PREFERRED_SIZE, 713, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jTextFieldNhapTenNhatKy, javax.swing.GroupLayout.PREFERRED_SIZE, 748, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -588,11 +597,81 @@ public class FormNhatKy extends javax.swing.JFrame {
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
-                .addGap(0, 0, 0)
-                .addComponent(jScrollPane2)
-                .addGap(0, 0, 0))
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 557, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
+        jLabelThongTinFile3.setText("Thông tin nhật ký:");
+
+        jLabelThongTinFile.setText("Cách đây 10 ngày");
+
+        jLabelNgayTao.setText("Ngày Tạo: 12/05/2020 17:31 PM ");
+
+        jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào.");
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabelThongTinFile)
+                    .addComponent(jLabelNgayTao)
+                    .addComponent(jLabelSuaLanCuoi)
+                    .addComponent(jLabelThongTinFile3))
+                .addContainerGap(111, Short.MAX_VALUE))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addComponent(jLabelThongTinFile3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabelThongTinFile)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabelNgayTao)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabelSuaLanCuoi)
+                .addGap(0, 11, Short.MAX_VALUE))
+        );
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 7, Short.MAX_VALUE)
+                        .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addContainerGap())
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+        );
+
+        jMenuBar1.setBackground(new java.awt.Color(241, 243, 229));
         jMenuBar1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
 
         jMenu1.setText("File");
@@ -653,43 +732,22 @@ public class FormNhatKy extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(968, 968, 968)
                 .addComponent(jLabelTrangThaiFIle)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(1, 1, 1))))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(129, 129, 129)
-                .addComponent(jLabelTrangThaiFIle)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(66, 66, 66))
+                        .addGap(135, 135, 135)
+                        .addComponent(jLabelTrangThaiFIle)))
+                .addGap(0, 0, 0))
         );
 
         pack();
@@ -737,27 +795,23 @@ public class FormNhatKy extends javax.swing.JFrame {
                 }
             }
             if (MaNhatKy != -1) { //là nhật ký
+                GiaTriKhiChonNhatKyTrenJTree();
+
                 jLabelTrangThaiFIle.setText("EditFile");
                 NKCurrent = nhatkyServices.getNhatKyByMaNhatKy(MaNhatKy);
                 NK.setMaNhatKy(NKCurrent.getMaNhatKy());
+                NK.setMaThuMuc(TM.getMaThuMuc());
                 NK.setMaThuMuc(NKCurrent.getMaThuMuc());
                 NK.setTenNhatKy(NKCurrent.getTenNhatKy());
                 NK.setNgayTao(NKCurrent.getNgayTao());
                 NK.setNgayChinhSuaCuoiCung(NKCurrent.getNgayChinhSuaCuoiCung());
                 NK.setNoiDung(NKCurrent.getNoiDung());
                 //load nhật ký ra màn hình
-                jTextFieldNhapTenNhatKy.setText(NK.getTenNhatKy());
-                jTextAreaNoiDung.setText(NK.getNoiDung());
-                jLabelNgayTao.setText("Ngày tạo: " + NK.getNgayTao());
-                jLabelSuaLanCuoi.setText("Sửa lần cuối: " + NK.getNgayChinhSuaCuoiCung());
+                LoadNhatKy();
             } else //là thư mục
             {
-                jTextFieldNhapTenNhatKy.setText("");
-                jTextAreaNoiDung.setText("");
-                jLabelNgayTao.setText("");
-                jLabelSuaLanCuoi.setText("");
-                jLabelTrangThaiFIle.setText("EditForder");
-
+                jLabelTrangThaiFIle.setText("EditFolder");
+                GiaTriKhiChonThuMucTrenJTree();
                 List<ThuMuc> thumucs = thumucServices.getAllThuMuc(ND);
                 if (thumucs.size() > 0) {
                     for (ThuMuc thumuc : thumucs) {
@@ -767,9 +821,8 @@ public class FormNhatKy extends javax.swing.JFrame {
                         }
                     }
                 }
-                if (MaThuMuc != -1) { //là nhật ký
+                if (MaThuMuc != -1) { //Tìm thấy thư mục
                     jTextFieldNhapTenFolder.setText(selectNode.getUserObject().toString());
-
                     TMCurrent = thumucServices.getThuMucByID(MaThuMuc);
                     TM.setMaThuMuc(TMCurrent.getMaThuMuc());
                     TM.setTaiKhoan(TMCurrent.getTaiKhoan());
@@ -778,70 +831,232 @@ public class FormNhatKy extends javax.swing.JFrame {
             }
 
         } catch (ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(FormNhatKy.class
+                    .getName()).log(Level.SEVERE, null, ex);
         } finally {
-            jTextFieldTìmKiem.setText(jLabelTrangThaiFIle.getText());
         }
     }//GEN-LAST:event_jTreeThuMucMouseClicked
 
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
-        // TODO add your handling code here:
+        new DangNhap(ND).setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_jMenuItem5ActionPerformed
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
-        // TODO add your handling code here:
+        new DoiMatKhau1().setVisible(true);
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
     private void jButtonReNameFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonReNameFolderActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jButtonReNameFolderActionPerformed
-
-    /**
-     * @param args the command line arguments
-     */
-//    public static void main(String args[]) {
-//        /* Set the Nimbus look and feel */
-//        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-//        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-//         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-//         */
-//        try {
-//            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-//                if ("Nimbus".equals(info.getName())) {
-//                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-//                    break;
-//                }
+    public static void LoadNhatKy() {
+        jTextFieldNhapTenNhatKy.setText(NK.getTenNhatKy());
+        jTextAreaNoiDung.setText(NK.getNoiDung());
+//        long KhoangCach = TinhKhoanCachHaiNgay(NK.getNgayTao().substring(0, 10), LocalDate.now().toString());
+//        String CachDay = "";
+//        if ((KhoangCach / 30) / 12 >= 1) {
+//            if (KhoangCach % (30 * 12.0) >= 0.5) {
+//                CachDay = "Cách đây hơn " + Math.round((KhoangCach / 30) / 12) + " năm.";
+//            } else {
+//                CachDay = "Cách đây " + Math.round((KhoangCach / 30) / 12) + " năm.";
 //            }
-//        } catch (ClassNotFoundException ex) {
-//            java.util.logging.Logger.getLogger(FormNhatKy.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-//        } catch (InstantiationException ex) {
-//            java.util.logging.Logger.getLogger(FormNhatKy.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-//        } catch (IllegalAccessException ex) {
-//            java.util.logging.Logger.getLogger(FormNhatKy.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-//        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-//            java.util.logging.Logger.getLogger(FormNhatKy.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+//        } else if ((KhoangCach / 30) >= 1) {
+//            if (KhoangCach % 30 >= 15) {
+//                CachDay = "Cách đây hơn " + Math.round((KhoangCach / 30)) + " tháng.";
+//            } else {
+//                CachDay = "Cách đây " + Math.round((KhoangCach / 30)) + " tháng.";
+//            }
+//        } else {
+//            CachDay = "Cách đây " + Math.round(KhoangCach) + " ngày.";
 //        }
-//        //</editor-fold>
-//
-//        /* Create and display the form */
-//        java.awt.EventQueue.invokeLater(new Runnable() {
-//            public void run() {
-//                new FormNhatKy().setVisible(true);
-//            }
-//        });
-//    }
+//        jLabelThongTinFile.setText(CachDay);
+        jLabelNgayTao.setText("Ngày tạo: " + NK.getNgayTao());
+        jLabelSuaLanCuoi.setText("Sửa lần cuối: " + NK.getNgayChinhSuaCuoiCung());
+    }
 
+    private static long TinhKhoanCachHaiNgay(String D1, String D2) {
+        SimpleDateFormat dateFormat;
+        dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar c1 = Calendar.getInstance();
+        Calendar c2 = Calendar.getInstance();
+        Date date1 = Date.valueOf(D1);
+        Date date2 = Date.valueOf(D2);
+        c1.setTime(date1);
+        c2.setTime(date2);
+        return (Math.abs((c2.getTime().getTime() - c1.getTime().getTime()) / (24 * 3600 * 1000)));
+    }
+
+    private void GiaTriMacDinh() {
+        jLabelTrangThaiFIle.setText("NewFile");
+        jButtonTimKiem.setEnabled(true);
+        jButtonXoa.setEnabled(false);
+        jButtonNewFile.setEnabled(false);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonNewFolder.setEnabled(true);
+
+        jTextFieldTimKiem.setEditable(true);
+        jTextFieldNhapTenNhatKy.setEditable(true);
+        jTextFieldNhapTenFolder.setEditable(false);
+        jTextAreaNoiDung.setEditable(true);
+        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText("");
+        jTextAreaNoiDung.setText("");
+        jTextAreaNoiDung.requestFocus();
+        jLabelNgayTao.setText("Ngày tạo: " + LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
+        jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào");
+        jLabelThongTinFile.setText("Cách đây 00 ngày.");
+    }
+
+    private void GiaTriKhiChonThuMucTrenJTree() {
+        jButtonTimKiem.setEnabled(true);
+        jButtonXoa.setEnabled(true);
+        jButtonNewFile.setEnabled(true);
+        jButtonLuuLai.setEnabled(false);
+        jButtonReNameFolder.setEnabled(true);
+        jButtonNewFolder.setEnabled(true);
+
+        jTextFieldTimKiem.setEditable(true);
+        jTextFieldNhapTenNhatKy.setEditable(false);
+        jTextFieldNhapTenFolder.setEditable(false);
+        jTextAreaNoiDung.setEditable(false);
+        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText("");
+        jTextAreaNoiDung.setText("");
+    }
+
+    private void GiaTriKhiChonNhatKyTrenJTree() {
+        jButtonTimKiem.setEnabled(true);
+        jButtonXoa.setEnabled(true);
+        jButtonNewFile.setEnabled(true);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonNewFolder.setEnabled(true);
+
+        jTextFieldTimKiem.setEditable(true);
+        jTextFieldNhapTenNhatKy.setEditable(true);
+        jTextFieldNhapTenFolder.setEditable(false);
+        jTextAreaNoiDung.setEditable(true);
+        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+    }
+
+    private void GiaTriKhiChonNewFolder() {
+        jLabelTrangThaiFIle.setText("NewFolder");
+        jButtonTimKiem.setEnabled(false);
+        jButtonNewFile.setEnabled(false);
+        jButtonNewFolder.setEnabled(false);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonXoa.setEnabled(false);
+
+        jTextFieldTimKiem.setEditable(false);
+        jTextFieldNhapTenNhatKy.setEditable(false);
+        jTextFieldNhapTenFolder.setEditable(true);
+        jTextAreaNoiDung.setEditable(false);
+        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText("");
+        jTextAreaNoiDung.setText("");
+
+        jTextFieldNhapTenFolder.requestFocus();
+    }
+
+    private void GiaTriKhiChonRenameFolder() {
+        jLabelTrangThaiFIle.setText("RenameFolder");
+        jButtonTimKiem.setEnabled(false);
+        jButtonNewFile.setEnabled(false);
+        jButtonNewFolder.setEnabled(false);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonXoa.setEnabled(false);
+
+        jTextFieldTimKiem.setEditable(false);
+        jTextFieldNhapTenNhatKy.setEditable(false);
+        jTextFieldNhapTenFolder.setEditable(true);
+        jTextAreaNoiDung.setEditable(false);
+        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText(TM.getTenThuMuc());
+        jTextAreaNoiDung.setText("");
+
+        jTextFieldNhapTenFolder.requestFocus();
+    }
+
+    private void GiaTriKhiChonNewFile() {
+        jButtonTimKiem.setEnabled(false);
+        jButtonXoa.setEnabled(false);
+        jButtonNewFile.setEnabled(false);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonNewFolder.setEnabled(false);
+
+        jTextFieldTimKiem.setEditable(false);
+        jTextFieldNhapTenNhatKy.setEditable(true);
+        jTextFieldNhapTenFolder.setEditable(false);
+        jTextAreaNoiDung.setEditable(true);
+        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText("");
+        jTextAreaNoiDung.setText("");
+        jTextAreaNoiDung.requestFocus();
+    }
+
+    private void centerFrame() {
+        Dimension windowSize = getSize();
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        Point centerPoint = ge.getCenterPoint();
+
+        int dx = centerPoint.x - windowSize.width / 2;
+        int dy = centerPoint.y - windowSize.height / 2;
+        setLocation(dx, dy);
+    }
+
+    private void ZoomjTextArea() {
+        jTextAreaNoiDung.addMouseWheelListener(mouseWheelEvent -> {
+            if (mouseWheelEvent.isControlDown()) {
+                jTextAreaNoiDung.setFont(new Font(
+                        jTextAreaNoiDung.getFont().getFontName(),
+                        jTextAreaNoiDung.getFont().getStyle(),
+                        mouseWheelEvent.getUnitsToScroll() > 0
+                        ? jTextAreaNoiDung.getFont().getSize() - 2
+                        : jTextAreaNoiDung.getFont().getSize() + 2));
+            }
+        });
+    }
+
+    private void CreateTableFind() throws ClassNotFoundException, SQLException {
+        TableFind TableFind = new TableFind();
+        TableFind.setBounds(jPanel6.getX(), jPanel6.getY(), jPanel6.getWidth() - 50, jPanel6.getHeight());
+        javax.swing.JPanel jPanel7 = new javax.swing.JPanel();
+        jPanel7.setBounds(jPanel6.getX(), jPanel6.getY(), jPanel6.getWidth(), jPanel6.getHeight() + 100);
+        TableFind.setPreferredSize(new Dimension(jPanel6.getWidth(), jPanel6.getHeight()));
+        jPanel7.add(TableFind);
+        jPanel7.updateUI();
+        jPanel1.add(jPanel7);
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButtonLuuLai;
+    public static javax.swing.JButton jButtonLuuLai;
     private javax.swing.JButton jButtonNewFile;
-    private javax.swing.JButton jButtonNewFolder;
-    private javax.swing.JButton jButtonReNameFolder;
-    private javax.swing.JButton jButtonTimKiem;
+    public static javax.swing.JButton jButtonNewFolder;
+    public static javax.swing.JButton jButtonReNameFolder;
+    public static javax.swing.JButton jButtonTimKiem;
     private javax.swing.JButton jButtonXoa;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabelNgayTao;
-    private javax.swing.JLabel jLabelSuaLanCuoi;
-    private javax.swing.JLabel jLabelThongTinFile;
+    public static javax.swing.JLabel jLabelNgayTao;
+    public static javax.swing.JLabel jLabelSuaLanCuoi;
+    public static javax.swing.JLabel jLabelThongTinFile;
     private javax.swing.JLabel jLabelThongTinFile3;
     private javax.swing.JLabel jLabelTrangThaiFIle;
     private javax.swing.JMenu jMenu1;
@@ -854,17 +1069,17 @@ public class FormNhatKy extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
-    private javax.swing.JPanel jPanel6;
+    public static javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTextArea jTextAreaNoiDung;
-    private javax.swing.JTextField jTextFieldNhapTenFolder;
-    private javax.swing.JTextField jTextFieldNhapTenNhatKy;
-    private javax.swing.JTextField jTextFieldTìmKiem;
-    private javax.swing.JTree jTreeThuMuc;
+    public static javax.swing.JTextArea jTextAreaNoiDung;
+    public static javax.swing.JTextField jTextFieldNhapTenFolder;
+    public static javax.swing.JTextField jTextFieldNhapTenNhatKy;
+    public static javax.swing.JTextField jTextFieldTimKiem;
+    public static javax.swing.JTree jTreeThuMuc;
     // End of variables declaration//GEN-END:variables
+
 }

@@ -94,18 +94,18 @@ public class ThuMucDAO {
         }
         return false;
     }
-//
-//    public boolean DeleteThuMuc(int MaThuMuc,NguoiDung nguoidung) throws ClassNotFoundException, SQLException {
-//        Connection connection = getJDBCConnection();
-//        String Sql = "DELETE FROM ThuMuc WHERE MaThuMuc = ? AND TaiKhoan = ?";
-//        try {
-//            PreparedStatement preparedStatement = connection.prepareStatement(Sql);
-//            preparedStatement.setInt(1, MaThuMuc);
-//            preparedStatement.setString(2, nguoidung.getTaiKhoan());
-//            preparedStatement.executeUpdate();
-//            return true;
-//        } catch (SQLException e) {
-//        }
-//        return false;
-//    }
+
+    public boolean DeleteThuMuc(ThuMuc thumuc) throws ClassNotFoundException, SQLException {
+        Connection connection = getJDBCConnection();
+        String Sql = "DELETE FROM ThuMuc WHERE MaThuMuc = ? AND TaiKhoan = ?";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(Sql);
+            preparedStatement.setInt(1, thumuc.getMaThuMuc());
+            preparedStatement.setString(2, thumuc.getTaiKhoan());
+            preparedStatement.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+        }
+        return false;
+    }
 }

@@ -31,4 +31,7 @@ public class ThuMucServices {
     public Boolean DoiTenThuMuc(ThuMuc thumuc)throws ClassNotFoundException, SQLException{
         return thumucDAO.UpdateThuMuc(thumuc);
     }
+    public Boolean XoaThuMuc(ThuMuc thumuc)throws ClassNotFoundException, SQLException{
+        return thumucDAO.DeleteThuMuc(thumuc);
+    }
 }
