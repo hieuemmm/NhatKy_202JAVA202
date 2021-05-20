@@ -54,7 +54,7 @@ import sun.applet.Main;
 
 /**
  *
- * @author Administrator
+ * @author Võ Văn Hiếu && Nguyễn Trần Anh Tuấn
  */
 public class FormNhatKy extends javax.swing.JFrame {
 
@@ -74,8 +74,8 @@ public class FormNhatKy extends javax.swing.JFrame {
      * @throws java.sql.SQLException
      */
     public FormNhatKy(NguoiDung nguoidung) throws ClassNotFoundException, SQLException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
-        //this.setBackground(Color.WHITE);
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        //UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());chuối
         initComponents();
         CreateTableFind();
         //ZoomjTextArea();
@@ -86,50 +86,21 @@ public class FormNhatKy extends javax.swing.JFrame {
         TM.setMaThuMuc(1);
         thumucServices = new ThuMucServices();
         nhatkyServices = new NhatKyServices();
-        this.setResizable(false);
+        //this.setResizable(false);
         LoadJtreeThuMuc();
         SetCusor();
         jTextAreaNoiDung.setLineWrap(true);
         jLabelTrangThaiChucNang.setVisible(false);
-        //Sự kiện Tạo Nhật Ký
+
+        //Lắng nghe sự kiện
         SuKienTaoMoiNhatKy();
-        //Sự kiện Lưu Lại
         SuKienLuuNhatKy();
-        //Sự kiện Xóa Nhật Ký
         SukienXoaThuMucHoacNhatKy();
-        //Sự kiện New Folder
         SuKienNewFolder();
-        //Rename Folder
         SuKienRenameFolder();
-        //Tim Kiem
         SuKienTimKiem();
-        //Giá trị mặc định 
+        //Set Giá trị mặc định 
         GiaTriMacDinh();
-    }
-
-    private void LoadJtreeThuMuc() throws ClassNotFoundException, SQLException {
-        List<ThuMuc> thumucs = thumucServices.getAllThuMuc(ND);
-        DefaultMutableTreeNode RootNode = new DefaultMutableTreeNode("Nhật ký của " + ND.getTaiKhoan());
-        for (ThuMuc thumuc : thumucs) {
-            DefaultMutableTreeNode ChildNode = new DefaultMutableTreeNode(thumuc.getTenThuMuc());
-            //add tên nhật ký vào cây
-            List<NhatKy> nhatkys = nhatkyServices.getAllNhatKyByMaThuMuc(thumuc);
-            for (NhatKy nhatky : nhatkys) {
-                DefaultMutableTreeNode ChildNodeNhatKy = new DefaultMutableTreeNode(nhatky.getTenNhatKy());
-                ChildNode.add(ChildNodeNhatKy);
-            }
-            RootNode.add(ChildNode);
-        }
-        DefaultTreeModel defaultTreeModel = new DefaultTreeModel(RootNode);
-        jTreeThuMuc.setModel(defaultTreeModel);
-    }
-
-    private void DeleteNodeJtreeThuMuc() throws ClassNotFoundException, SQLException {
-        DefaultMutableTreeNode Selectnode = (DefaultMutableTreeNode) jTreeThuMuc.getSelectionPath().getLastPathComponent();
-        DefaultTreeModel model = (DefaultTreeModel) jTreeThuMuc.getModel();
-        if (Selectnode != jTreeThuMuc.getModel().getRoot()) {
-            model.removeNodeFromParent(Selectnode);
-        }
     }
 
     private void SuKienTaoMoiNhatKy() {
@@ -310,7 +281,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         };
         String keyDel = "Delete";
         jButtonXoa.setAction(DeleteFileNhatKy);
-        jButtonXoa.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, KeyEvent.CTRL_DOWN_MASK), keyDel);
+        jButtonXoa.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0, true), keyDel);
         jButtonXoa.getActionMap().put(keyDel, DeleteFileNhatKy);
     }
 
@@ -326,7 +297,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         String keyNewFolder = "New Folder";
         jButtonNewFolder.setAction(NewFolder);
         //NewFolder.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_S);
-        jButtonNewFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.SHIFT_DOWN_MASK), keyNewFolder);
+        jButtonNewFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.SHIFT_DOWN_MASK | KeyEvent.CTRL_DOWN_MASK), keyNewFolder);
         jButtonNewFolder.getActionMap().put(keyNewFolder, NewFolder);
     }
 
@@ -343,7 +314,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         };
         String keyRenameFolder = "Rename Folder";
         jButtonReNameFolder.setAction(RenameFolder);
-        jButtonReNameFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), keyRenameFolder);
+        jButtonReNameFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0, true), keyRenameFolder);
         jButtonReNameFolder.getActionMap().put(keyRenameFolder, RenameFolder);
     }
 
@@ -376,6 +347,238 @@ public class FormNhatKy extends javax.swing.JFrame {
         jButtonTimKiem.setAction(FindNhatKy);
         jButtonTimKiem.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK), keyFind);
         jButtonTimKiem.getActionMap().put(keyFind, FindNhatKy);
+    }
+
+    private void LoadJtreeThuMuc() throws ClassNotFoundException, SQLException {
+        List<ThuMuc> thumucs = thumucServices.getAllThuMuc(ND);
+        DefaultMutableTreeNode RootNode = new DefaultMutableTreeNode("Nhật ký của " + ND.getTaiKhoan());
+        for (ThuMuc thumuc : thumucs) {
+            DefaultMutableTreeNode ChildNode = new DefaultMutableTreeNode(thumuc.getTenThuMuc());
+            //add tên nhật ký vào cây
+            List<NhatKy> nhatkys = nhatkyServices.getAllNhatKyByMaThuMuc(thumuc);
+            for (NhatKy nhatky : nhatkys) {
+                DefaultMutableTreeNode ChildNodeNhatKy = new DefaultMutableTreeNode(nhatky.getTenNhatKy());
+                ChildNode.add(ChildNodeNhatKy);
+            }
+            RootNode.add(ChildNode);
+        }
+        DefaultTreeModel defaultTreeModel = new DefaultTreeModel(RootNode);
+        jTreeThuMuc.setModel(defaultTreeModel);
+    }
+
+    private void DeleteNodeJtreeThuMuc() throws ClassNotFoundException, SQLException {
+        DefaultMutableTreeNode Selectnode = (DefaultMutableTreeNode) jTreeThuMuc.getSelectionPath().getLastPathComponent();
+        DefaultTreeModel model = (DefaultTreeModel) jTreeThuMuc.getModel();
+        if (Selectnode != jTreeThuMuc.getModel().getRoot()) {
+            model.removeNodeFromParent(Selectnode);
+        }
+    }
+
+    public static void LoadNhatKy() {
+        jTextFieldNhapTenNhatKy.setText(NK.getTenNhatKy());
+        jTextAreaNoiDung.setText(NK.getNoiDung());
+        jLabelThongTinFile.setText(TinhKhoanCachHaiNgay(NK.getNgayTao().substring(0, 10), LocalDate.now().toString()));
+        jLabelNgayTao.setText("Ngày tạo: " + NK.getNgayTao());
+        jLabelSuaLanCuoi.setText("Sửa lần cuối: " + NK.getNgayChinhSuaCuoiCung());
+    }
+
+    private static String TinhKhoanCachHaiNgay(String D1, String D2) {
+        SimpleDateFormat dateFormat;
+        dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar c1 = Calendar.getInstance();
+        Calendar c2 = Calendar.getInstance();
+        Date date1 = Date.valueOf(D1);
+        Date date2 = Date.valueOf(D2);
+        c1.setTime(date1);
+        c2.setTime(date2);
+        long KhoangCach = (Math.abs((c2.getTime().getTime() - c1.getTime().getTime()) / (24 * 3600 * 1000)));
+        String CachDay = "";
+        if ((KhoangCach / 30) / 12 >= 1) {
+            if (KhoangCach % (30 * 12.0) >= 0.5) {
+                CachDay = "Cách đây hơn " + Math.round((KhoangCach / 30) / 12) + " năm.";
+            } else {
+                CachDay = "Cách đây " + Math.round((KhoangCach / 30) / 12) + " năm.";
+            }
+        } else if ((KhoangCach / 30) >= 1) {
+            if (KhoangCach % 30 >= 15) {
+                CachDay = "Cách đây hơn " + Math.round((KhoangCach / 30)) + " tháng.";
+            } else {
+                CachDay = "Cách đây " + Math.round((KhoangCach / 30)) + " tháng.";
+            }
+        } else {
+            CachDay = "Cách đây " + Math.round(KhoangCach) + " ngày.";
+        }
+        return CachDay;
+    }
+
+    private void GiaTriMacDinh() {
+        jLabelTrangThaiChucNang.setText("NewFile");
+        jButtonTimKiem.setEnabled(true);
+        jButtonXoa.setEnabled(false);
+        jButtonNewFile.setEnabled(false);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonNewFolder.setEnabled(true);
+
+        jTextFieldTimKiem.setEditable(true);
+        jTextFieldNhapTenNhatKy.setEditable(true);
+        jTextFieldNhapTenFolder.setEditable(false);
+        jTextAreaNoiDung.setEditable(true);
+        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText("");
+        jTextAreaNoiDung.setText("");
+        jTextAreaNoiDung.requestFocus();
+        jLabelNgayTao.setText("Ngày tạo: " + LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
+        jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào");
+        jLabelThongTinFile.setText("Cách đây 00 ngày.");
+    }
+
+    private void GiaTriKhiChonThuMucTrenJTree() {
+        jButtonTimKiem.setEnabled(true);
+        jButtonXoa.setEnabled(true);
+        jButtonNewFile.setEnabled(true);
+        jButtonLuuLai.setEnabled(false);
+        jButtonReNameFolder.setEnabled(true);
+        jButtonNewFolder.setEnabled(true);
+
+        jTextFieldTimKiem.setEditable(true);
+        jTextFieldNhapTenNhatKy.setEditable(false);
+        jTextFieldNhapTenFolder.setEditable(false);
+        jTextAreaNoiDung.setEditable(false);
+        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText("");
+        jTextAreaNoiDung.setText("");
+    }
+
+    public static void GiaTriKhiChonNhatKyTrenJTree() {
+        jButtonTimKiem.setEnabled(true);
+        jButtonXoa.setEnabled(true);
+        jButtonNewFile.setEnabled(true);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonNewFolder.setEnabled(true);
+
+        jTextFieldTimKiem.setEditable(true);
+        jTextFieldNhapTenNhatKy.setEditable(true);
+        jTextFieldNhapTenFolder.setEditable(false);
+        jTextAreaNoiDung.setEditable(true);
+        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+    }
+
+    private void GiaTriKhiChonNewFolder() {
+        jLabelTrangThaiChucNang.setText("NewFolder");
+        jButtonTimKiem.setEnabled(false);
+        jButtonNewFile.setEnabled(false);
+        jButtonNewFolder.setEnabled(false);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonXoa.setEnabled(false);
+
+        jTextFieldTimKiem.setEditable(false);
+        jTextFieldNhapTenNhatKy.setEditable(false);
+        jTextFieldNhapTenFolder.setEditable(true);
+        jTextAreaNoiDung.setEditable(false);
+        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText("");
+        jTextAreaNoiDung.setText("");
+
+        jTextFieldNhapTenFolder.requestFocus();
+    }
+
+    private void GiaTriKhiChonRenameFolder() {
+        jLabelTrangThaiChucNang.setText("RenameFolder");
+        jButtonTimKiem.setEnabled(false);
+        jButtonNewFile.setEnabled(false);
+        jButtonNewFolder.setEnabled(false);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonXoa.setEnabled(false);
+
+        jTextFieldTimKiem.setEditable(false);
+        jTextFieldNhapTenNhatKy.setEditable(false);
+        jTextFieldNhapTenFolder.setEditable(true);
+        jTextAreaNoiDung.setEditable(false);
+        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText(TM.getTenThuMuc());
+        jTextAreaNoiDung.setText("");
+
+        jTextFieldNhapTenFolder.requestFocus();
+    }
+
+    private void GiaTriKhiChonNewFile() {
+        jButtonTimKiem.setEnabled(false);
+        jButtonXoa.setEnabled(false);
+        jButtonNewFile.setEnabled(false);
+        jButtonLuuLai.setEnabled(true);
+        jButtonReNameFolder.setEnabled(false);
+        jButtonNewFolder.setEnabled(false);
+
+        jTextFieldTimKiem.setEditable(false);
+        jTextFieldNhapTenNhatKy.setEditable(true);
+        jTextFieldNhapTenFolder.setEditable(false);
+        jTextAreaNoiDung.setEditable(true);
+        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+
+        jTextFieldTimKiem.setText("");
+        jTextFieldNhapTenNhatKy.setText("");
+        jTextFieldNhapTenFolder.setText("");
+        jTextAreaNoiDung.setText("");
+        jTextAreaNoiDung.requestFocus();
+    }
+
+    private void centerFrame() {
+        Dimension windowSize = getSize();
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        Point centerPoint = ge.getCenterPoint();
+
+        int dx = centerPoint.x - windowSize.width / 2;
+        int dy = centerPoint.y - windowSize.height / 2;
+        setLocation(dx, dy);
+    }
+
+    private void ZoomjTextArea() {
+        jTextAreaNoiDung.addMouseWheelListener(mouseWheelEvent -> {
+            if (mouseWheelEvent.isControlDown()) {
+                jTextAreaNoiDung.setFont(new Font(
+                        jTextAreaNoiDung.getFont().getFontName(),
+                        jTextAreaNoiDung.getFont().getStyle(),
+                        mouseWheelEvent.getUnitsToScroll() > 0
+                        ? jTextAreaNoiDung.getFont().getSize() - 2
+                        : jTextAreaNoiDung.getFont().getSize() + 2));
+            }
+        });
+    }
+
+    private void SetCusor() {
+        jButtonLuuLai.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonNewFile.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonNewFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonReNameFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonTimKiem.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonXoa.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void CreateTableFind() throws ClassNotFoundException, SQLException {
+        TableFind TableFind = new TableFind();
+        TableFind.setBounds(jPanel6.getX(), jPanel6.getY(), jPanel6.getWidth() - 50, jPanel6.getHeight());
+        javax.swing.JPanel jPanel7 = new javax.swing.JPanel();
+        jPanel7.setBounds(jPanel6.getX(), jPanel6.getY(), jPanel6.getWidth(), jPanel6.getHeight() + 100);
+        TableFind.setPreferredSize(new Dimension(jPanel6.getWidth(), jPanel6.getHeight()));
+        jPanel7.add(TableFind);
+        jPanel7.updateUI();
+        jPanel1.add(jPanel7);
     }
 
     @SuppressWarnings("unchecked")
@@ -427,22 +630,12 @@ public class FormNhatKy extends javax.swing.JFrame {
 
         jButtonNewFolder.setText("New Folder");
         jButtonNewFolder.setToolTipText("Shift + N");
-        jButtonNewFolder.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonNewFolderActionPerformed(evt);
-            }
-        });
 
         jButtonLuuLai.setText("Save");
         jButtonLuuLai.setToolTipText("Ctrl + S");
 
         jButtonReNameFolder.setText("Rename Folder");
         jButtonReNameFolder.setToolTipText("F2");
-        jButtonReNameFolder.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonReNameFolderActionPerformed(evt);
-            }
-        });
 
         jTreeThuMuc.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         javax.swing.tree.DefaultMutableTreeNode treeNode1 = new javax.swing.tree.DefaultMutableTreeNode("root");
@@ -673,11 +866,6 @@ public class FormNhatKy extends javax.swing.JFrame {
         jMenuItem1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/newfile.png"))); // NOI18N
         jMenuItem1.setText("New File");
         jMenuItem1.setActionCommand("Save");
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem1ActionPerformed(evt);
-            }
-        });
         jMenu1.add(jMenuItem1);
 
         jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, java.awt.event.InputEvent.CTRL_DOWN_MASK));
@@ -746,16 +934,8 @@ public class FormNhatKy extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButtonNewFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNewFolderActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButtonNewFolderActionPerformed
-
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
-
     private void jTextAreaNoiDungMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTextAreaNoiDungMouseClicked
-        jTextAreaNoiDung.requestFocus();//or inWindow
+        jTextAreaNoiDung.requestFocus();
     }//GEN-LAST:event_jTextAreaNoiDungMouseClicked
 
     private void jTreeThuMucMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTreeThuMucMouseClicked
@@ -832,215 +1012,6 @@ public class FormNhatKy extends javax.swing.JFrame {
         new DoiMatKhau().setVisible(true);
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
-    private void jButtonReNameFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonReNameFolderActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButtonReNameFolderActionPerformed
-    public static void LoadNhatKy() {
-        jTextFieldNhapTenNhatKy.setText(NK.getTenNhatKy());
-        jTextAreaNoiDung.setText(NK.getNoiDung());
-//        long KhoangCach = TinhKhoanCachHaiNgay(NK.getNgayTao().substring(0, 10), LocalDate.now().toString());
-//        String CachDay = "";
-//        if ((KhoangCach / 30) / 12 >= 1) {
-//            if (KhoangCach % (30 * 12.0) >= 0.5) {
-//                CachDay = "Cách đây hơn " + Math.round((KhoangCach / 30) / 12) + " năm.";
-//            } else {
-//                CachDay = "Cách đây " + Math.round((KhoangCach / 30) / 12) + " năm.";
-//            }
-//        } else if ((KhoangCach / 30) >= 1) {
-//            if (KhoangCach % 30 >= 15) {
-//                CachDay = "Cách đây hơn " + Math.round((KhoangCach / 30)) + " tháng.";
-//            } else {
-//                CachDay = "Cách đây " + Math.round((KhoangCach / 30)) + " tháng.";
-//            }
-//        } else {
-//            CachDay = "Cách đây " + Math.round(KhoangCach) + " ngày.";
-//        }
-//        jLabelThongTinFile.setText(CachDay);
-        jLabelNgayTao.setText("Ngày tạo: " + NK.getNgayTao());
-        jLabelSuaLanCuoi.setText("Sửa lần cuối: " + NK.getNgayChinhSuaCuoiCung());
-    }
-
-    private static long TinhKhoanCachHaiNgay(String D1, String D2) {
-        SimpleDateFormat dateFormat;
-        dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar c1 = Calendar.getInstance();
-        Calendar c2 = Calendar.getInstance();
-        Date date1 = Date.valueOf(D1);
-        Date date2 = Date.valueOf(D2);
-        c1.setTime(date1);
-        c2.setTime(date2);
-        return (Math.abs((c2.getTime().getTime() - c1.getTime().getTime()) / (24 * 3600 * 1000)));
-    }
-
-    private void GiaTriMacDinh() {
-        jLabelTrangThaiChucNang.setText("NewFile");
-        jButtonTimKiem.setEnabled(true);
-        jButtonXoa.setEnabled(false);
-        jButtonNewFile.setEnabled(false);
-        jButtonLuuLai.setEnabled(true);
-        jButtonReNameFolder.setEnabled(false);
-        jButtonNewFolder.setEnabled(true);
-
-        jTextFieldTimKiem.setEditable(true);
-        jTextFieldNhapTenNhatKy.setEditable(true);
-        jTextFieldNhapTenFolder.setEditable(false);
-        jTextAreaNoiDung.setEditable(true);
-        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
-
-        jTextFieldTimKiem.setText("");
-        jTextFieldNhapTenNhatKy.setText("");
-        jTextFieldNhapTenFolder.setText("");
-        jTextAreaNoiDung.setText("");
-        jTextAreaNoiDung.requestFocus();
-        jLabelNgayTao.setText("Ngày tạo: " + LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
-        jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào");
-        jLabelThongTinFile.setText("Cách đây 00 ngày.");
-    }
-
-    private void GiaTriKhiChonThuMucTrenJTree() {
-        jButtonTimKiem.setEnabled(true);
-        jButtonXoa.setEnabled(true);
-        jButtonNewFile.setEnabled(true);
-        jButtonLuuLai.setEnabled(false);
-        jButtonReNameFolder.setEnabled(true);
-        jButtonNewFolder.setEnabled(true);
-
-        jTextFieldTimKiem.setEditable(true);
-        jTextFieldNhapTenNhatKy.setEditable(false);
-        jTextFieldNhapTenFolder.setEditable(false);
-        jTextAreaNoiDung.setEditable(false);
-        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
-
-        jTextFieldTimKiem.setText("");
-        jTextFieldNhapTenNhatKy.setText("");
-        jTextFieldNhapTenFolder.setText("");
-        jTextAreaNoiDung.setText("");
-    }
-
-    public static void GiaTriKhiChonNhatKyTrenJTree() {
-        jButtonTimKiem.setEnabled(true);
-        jButtonXoa.setEnabled(true);
-        jButtonNewFile.setEnabled(true);
-        jButtonLuuLai.setEnabled(true);
-        jButtonReNameFolder.setEnabled(false);
-        jButtonNewFolder.setEnabled(true);
-
-        jTextFieldTimKiem.setEditable(true);
-        jTextFieldNhapTenNhatKy.setEditable(true);
-        jTextFieldNhapTenFolder.setEditable(false);
-        jTextAreaNoiDung.setEditable(true);
-        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
-    }
-
-    private void GiaTriKhiChonNewFolder() {
-        jLabelTrangThaiChucNang.setText("NewFolder");
-        jButtonTimKiem.setEnabled(false);
-        jButtonNewFile.setEnabled(false);
-        jButtonNewFolder.setEnabled(false);
-        jButtonLuuLai.setEnabled(true);
-        jButtonReNameFolder.setEnabled(false);
-        jButtonXoa.setEnabled(false);
-
-        jTextFieldTimKiem.setEditable(false);
-        jTextFieldNhapTenNhatKy.setEditable(false);
-        jTextFieldNhapTenFolder.setEditable(true);
-        jTextAreaNoiDung.setEditable(false);
-        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
-
-        jTextFieldTimKiem.setText("");
-        jTextFieldNhapTenNhatKy.setText("");
-        jTextFieldNhapTenFolder.setText("");
-        jTextAreaNoiDung.setText("");
-
-        jTextFieldNhapTenFolder.requestFocus();
-    }
-
-    private void GiaTriKhiChonRenameFolder() {
-        jLabelTrangThaiChucNang.setText("RenameFolder");
-        jButtonTimKiem.setEnabled(false);
-        jButtonNewFile.setEnabled(false);
-        jButtonNewFolder.setEnabled(false);
-        jButtonLuuLai.setEnabled(true);
-        jButtonReNameFolder.setEnabled(false);
-        jButtonXoa.setEnabled(false);
-
-        jTextFieldTimKiem.setEditable(false);
-        jTextFieldNhapTenNhatKy.setEditable(false);
-        jTextFieldNhapTenFolder.setEditable(true);
-        jTextAreaNoiDung.setEditable(false);
-        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
-
-        jTextFieldTimKiem.setText("");
-        jTextFieldNhapTenNhatKy.setText("");
-        jTextFieldNhapTenFolder.setText(TM.getTenThuMuc());
-        jTextAreaNoiDung.setText("");
-
-        jTextFieldNhapTenFolder.requestFocus();
-    }
-
-    private void GiaTriKhiChonNewFile() {
-        jButtonTimKiem.setEnabled(false);
-        jButtonXoa.setEnabled(false);
-        jButtonNewFile.setEnabled(false);
-        jButtonLuuLai.setEnabled(true);
-        jButtonReNameFolder.setEnabled(false);
-        jButtonNewFolder.setEnabled(false);
-
-        jTextFieldTimKiem.setEditable(false);
-        jTextFieldNhapTenNhatKy.setEditable(true);
-        jTextFieldNhapTenFolder.setEditable(false);
-        jTextAreaNoiDung.setEditable(true);
-        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
-
-        jTextFieldTimKiem.setText("");
-        jTextFieldNhapTenNhatKy.setText("");
-        jTextFieldNhapTenFolder.setText("");
-        jTextAreaNoiDung.setText("");
-        jTextAreaNoiDung.requestFocus();
-    }
-
-    private void centerFrame() {
-        Dimension windowSize = getSize();
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        Point centerPoint = ge.getCenterPoint();
-
-        int dx = centerPoint.x - windowSize.width / 2;
-        int dy = centerPoint.y - windowSize.height / 2;
-        setLocation(dx, dy);
-    }
-
-    private void ZoomjTextArea() {
-        jTextAreaNoiDung.addMouseWheelListener(mouseWheelEvent -> {
-            if (mouseWheelEvent.isControlDown()) {
-                jTextAreaNoiDung.setFont(new Font(
-                        jTextAreaNoiDung.getFont().getFontName(),
-                        jTextAreaNoiDung.getFont().getStyle(),
-                        mouseWheelEvent.getUnitsToScroll() > 0
-                        ? jTextAreaNoiDung.getFont().getSize() - 2
-                        : jTextAreaNoiDung.getFont().getSize() + 2));
-            }
-        });
-    }
-
-    private void SetCusor() {
-        jButtonLuuLai.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        jButtonNewFile.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        jButtonNewFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        jButtonReNameFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        jButtonTimKiem.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        jButtonXoa.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    }
-
-    private void CreateTableFind() throws ClassNotFoundException, SQLException {
-        TableFind TableFind = new TableFind();
-        TableFind.setBounds(jPanel6.getX(), jPanel6.getY(), jPanel6.getWidth() - 50, jPanel6.getHeight());
-        javax.swing.JPanel jPanel7 = new javax.swing.JPanel();
-        jPanel7.setBounds(jPanel6.getX(), jPanel6.getY(), jPanel6.getWidth(), jPanel6.getHeight() + 100);
-        TableFind.setPreferredSize(new Dimension(jPanel6.getWidth(), jPanel6.getHeight()));
-        jPanel7.add(TableFind);
-        jPanel7.updateUI();
-        jPanel1.add(jPanel7);
-    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     public static javax.swing.JButton jButtonLuuLai;
     public static javax.swing.JButton jButtonNewFile;
