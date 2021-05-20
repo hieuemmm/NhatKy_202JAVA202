@@ -843,7 +843,7 @@ public class FormNhatKy extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItem5ActionPerformed
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
-        new DoiMatKhau1().setVisible(true);
+        new DoiMatKhau().setVisible(true);
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
     private void jButtonReNameFolderActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonReNameFolderActionPerformed
