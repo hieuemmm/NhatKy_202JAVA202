@@ -43,10 +43,12 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.TreeSelectionEvent;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.DefaultCaret;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeSelectionModel;
 import javax.swing.undo.UndoManager;
 import sun.applet.Main;
 
@@ -88,7 +90,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         LoadJtreeThuMuc();
         SetCusor();
         jTextAreaNoiDung.setLineWrap(true);
-        jLabelTrangThaiFIle.setVisible(false);
+        jLabelTrangThaiChucNang.setVisible(false);
         //Sự kiện Tạo Nhật Ký
         SuKienTaoMoiNhatKy();
         //Sự kiện Lưu Lại
@@ -118,25 +120,24 @@ public class FormNhatKy extends javax.swing.JFrame {
             }
             RootNode.add(ChildNode);
         }
-
         DefaultTreeModel defaultTreeModel = new DefaultTreeModel(RootNode);
         jTreeThuMuc.setModel(defaultTreeModel);
     }
-    private void SetCusor(){
-       jButtonLuuLai.setCursor(new Cursor(Cursor.HAND_CURSOR));
-       jButtonNewFile.setCursor(new Cursor(Cursor.HAND_CURSOR));
-       jButtonNewFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
-       jButtonReNameFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
-       jButtonTimKiem.setCursor(new Cursor(Cursor.HAND_CURSOR));
-       jButtonXoa.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+    private void DeleteNodeJtreeThuMuc() throws ClassNotFoundException, SQLException {
+        DefaultMutableTreeNode Selectnode = (DefaultMutableTreeNode) jTreeThuMuc.getSelectionPath().getLastPathComponent();
+        DefaultTreeModel model = (DefaultTreeModel) jTreeThuMuc.getModel();
+        if (Selectnode != jTreeThuMuc.getModel().getRoot()) {
+            model.removeNodeFromParent(Selectnode);
+        }
     }
-    
+
     private void SuKienTaoMoiNhatKy() {
         Action NewFileNhatKy;
         NewFileNhatKy = new AbstractAction("New Diary") {
             @Override
             public void actionPerformed(ActionEvent e) {
-                jLabelTrangThaiFIle.setText("NewFile");
+                jLabelTrangThaiChucNang.setText("NewFile");
                 GiaTriKhiChonNewFile();
                 jLabelNgayTao.setText("Ngày tạo: " + LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
                 jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào");
@@ -155,91 +156,97 @@ public class FormNhatKy extends javax.swing.JFrame {
         SaveFile = new AbstractAction("Save") {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (jLabelTrangThaiFIle.getText().equals("NewFile")) {
-                    NK.setMaThuMuc(TM.getMaThuMuc());
-                    if (jTextFieldNhapTenNhatKy.getText().equals("")) {
-                        NK.setTenNhatKy(jLabelNgayTao.getText());
-                    } else {
-                        NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
-                    }
-                    NK.setNgayTao(jLabelNgayTao.getText().substring(10, jLabelNgayTao.getText().length()));
-                    NK.setNgayChinhSuaCuoiCung(jLabelSuaLanCuoi.getText().substring(14, jLabelSuaLanCuoi.getText().length()));
-                    NK.setNoiDung(jTextAreaNoiDung.getText());
-                    try {
-                        if (nhatkyServices.KiemTraNhatKyTonTai(NK, ND)) {
-                            JOptionPane.showMessageDialog(FormNhatKy.this, "Tên nhật ký đã tồn tại", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
+                switch (jLabelTrangThaiChucNang.getText()) {
+                    case "NewFile":
+                        NK.setMaThuMuc(TM.getMaThuMuc());
+                        if (jTextFieldNhapTenNhatKy.getText().equals("")) {
+                            NK.setTenNhatKy(jLabelNgayTao.getText());
                         } else {
-                            //đã lưu thành công return true;
-                            if (nhatkyServices.ThemNhatKyMoi(NK)) {
-                                jLabelTrangThaiFIle.setText("EditFile");
-                                //selet nhật ký mới insert ra
-                                NK = nhatkyServices.getNhatKyByTenNhatKy(jTextFieldNhapTenNhatKy.getText());
-                                GiaTriKhiChonNhatKyTrenJTree();
-                                LoadNhatKy();
-                                LoadJtreeThuMuc();
-                            } else {
-                                JOptionPane.showMessageDialog(FormNhatKy.this, "Lưu thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
-                            }
+                            NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
                         }
-                    } catch (ClassNotFoundException | SQLException ex) {
-                        Logger.getLogger(FormNhatKy.class
-                                .getName()).log(Level.SEVERE, null, ex);
-                    }
-                } else if (jLabelTrangThaiFIle.getText().equals("EditFile")) {
-                    if (jTextFieldNhapTenNhatKy.getText().equals("")) {
+                        NK.setNgayTao(jLabelNgayTao.getText().substring(10, jLabelNgayTao.getText().length()));
+                        NK.setNgayChinhSuaCuoiCung(jLabelSuaLanCuoi.getText().substring(14, jLabelSuaLanCuoi.getText().length()));
+                        NK.setNoiDung(jTextAreaNoiDung.getText());
+                        try {
+                            if (nhatkyServices.KiemTraNhatKyTonTai(NK, ND)) {
+                                JOptionPane.showMessageDialog(FormNhatKy.this, "Tên nhật ký đã tồn tại", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
+                            } else {
+                                //đã lưu thành công return true;
+                                if (nhatkyServices.ThemNhatKyMoi(NK)) {
+                                    jLabelTrangThaiChucNang.setText("EditFile");
+                                    //selet nhật ký mới insert ra
+                                    NK = nhatkyServices.getNhatKyByTenNhatKy(NK.getTenNhatKy());
+                                    GiaTriKhiChonNhatKyTrenJTree();
+                                    LoadJtreeThuMuc();
+                                } else {
+                                    JOptionPane.showMessageDialog(FormNhatKy.this, "Lưu thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
+                                }
+                            }
+                        } catch (ClassNotFoundException | SQLException ex) {
+                            Logger.getLogger(FormNhatKy.class
+                                    .getName()).log(Level.SEVERE, null, ex);
+                        }
+                        break;
+                    case "EditFile":
+                        if (jTextFieldNhapTenNhatKy.getText().equals("")) {
 
-                        NK.setTenNhatKy(jLabelNgayTao.getText());
-                    } else {
-                        NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
-                    }
-                    NK.setNoiDung(jTextAreaNoiDung.getText());
-                    NK.setNgayChinhSuaCuoiCung(LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
-                    try {
-                        if (nhatkyServices.SuaNhatKy(NK)) {
-                            LoadJtreeThuMuc();
-                            NK = nhatkyServices.getNhatKyByMaNhatKy(NK.getMaNhatKy());
-                            jLabelSuaLanCuoi.setText("Sửa lần cuối: " + NK.getNgayChinhSuaCuoiCung());
+                            NK.setTenNhatKy(jLabelNgayTao.getText());
+                        } else {
+                            NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
                         }
-                    } catch (ClassNotFoundException | SQLException ex) {
-                        Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                } else if (jLabelTrangThaiFIle.getText().equals("NewFolder")) {
-                    if (!jTextFieldNhapTenFolder.getText().equals("")) {
-                        TM.setTaiKhoan(ND.getTaiKhoan());
-                        TM.setTenThuMuc(jTextFieldNhapTenFolder.getText());
+                        NK.setNoiDung(jTextAreaNoiDung.getText());
+                        NK.setNgayChinhSuaCuoiCung(LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
                         try {
-                            if (!thumucServices.KiemTraThuMucTonTai(TM)) {
-                                //Thêm thư mục thnahf công
-                                thumucServices.ThemThuMuc(TM);
+                            if (nhatkyServices.SuaNhatKy(NK)) {
                                 LoadJtreeThuMuc();
-                                GiaTriMacDinh();
-                            } else {
-                                JOptionPane.showMessageDialog(FormNhatKy.this, "Thư mục đã tồn tại", "New Folder", JOptionPane.WARNING_MESSAGE);
+                                NK = nhatkyServices.getNhatKyByMaNhatKy(NK.getMaNhatKy());
+                                jLabelSuaLanCuoi.setText("Sửa lần cuối: " + NK.getNgayChinhSuaCuoiCung());
                             }
                         } catch (ClassNotFoundException | SQLException ex) {
-                            Logger.getLogger(FormNhatKy.class
-                                    .getName()).log(Level.SEVERE, null, ex);
+                            Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
                         }
-                    } else {
-                        JOptionPane.showMessageDialog(FormNhatKy.this, "Chưa nhập tên thư mục", "New Folder", JOptionPane.WARNING_MESSAGE);
-                    }
-                } else if (jLabelTrangThaiFIle.getText().equals("RenameFolder")) {
-                    if (!jTextFieldNhapTenFolder.getText().equals("")) {
-                        TM.setTenThuMuc(jTextFieldNhapTenFolder.getText());
-                        try {
-                            if (!thumucServices.KiemTraThuMucTonTai(TM)) {
-                                //ADD THANH CONG
-                                thumucServices.DoiTenThuMuc(TM);
-                                GiaTriMacDinh();
-                                LoadJtreeThuMuc();
+                        break;
+                    case "NewFolder":
+                        if (!jTextFieldNhapTenFolder.getText().equals("")) {
+                            TM.setTaiKhoan(ND.getTaiKhoan());
+                            TM.setTenThuMuc(jTextFieldNhapTenFolder.getText());
+                            try {
+                                if (!thumucServices.KiemTraThuMucTonTai(TM)) {
+                                    //Thêm thư mục thnahf công
+                                    thumucServices.ThemThuMuc(TM);
+                                    LoadJtreeThuMuc();
+                                    GiaTriMacDinh();
+                                } else {
+                                    JOptionPane.showMessageDialog(FormNhatKy.this, "Thư mục đã tồn tại", "New Folder", JOptionPane.WARNING_MESSAGE);
+                                }
+                            } catch (ClassNotFoundException | SQLException ex) {
+                                Logger.getLogger(FormNhatKy.class
+                                        .getName()).log(Level.SEVERE, null, ex);
                             }
-                        } catch (ClassNotFoundException | SQLException ex) {
-                            Logger.getLogger(FormNhatKy.class
-                                    .getName()).log(Level.SEVERE, null, ex);
+                        } else {
+                            JOptionPane.showMessageDialog(FormNhatKy.this, "Chưa nhập tên thư mục", "New Folder", JOptionPane.WARNING_MESSAGE);
                         }
-                    } else {
-                        JOptionPane.showMessageDialog(FormNhatKy.this, "Tên thư mục không được rỗng", "ReName Folder", JOptionPane.WARNING_MESSAGE);
-                    }
+                        break;
+                    case "RenameFolder":
+                        if (!jTextFieldNhapTenFolder.getText().equals("")) {
+                            TM.setTenThuMuc(jTextFieldNhapTenFolder.getText());
+                            try {
+                                if (!thumucServices.KiemTraThuMucTonTai(TM)) {
+                                    //ADD THANH CONG
+                                    thumucServices.DoiTenThuMuc(TM);
+                                    GiaTriMacDinh();
+                                    LoadJtreeThuMuc();
+                                }
+                            } catch (ClassNotFoundException | SQLException ex) {
+                                Logger.getLogger(FormNhatKy.class
+                                        .getName()).log(Level.SEVERE, null, ex);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(FormNhatKy.this, "Tên thư mục không được rỗng", "ReName Folder", JOptionPane.WARNING_MESSAGE);
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
         };
@@ -254,13 +261,13 @@ public class FormNhatKy extends javax.swing.JFrame {
         DeleteFileNhatKy = new AbstractAction("Delete") {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (jLabelTrangThaiFIle.getText().equals("EditFile")) {
+                if (jLabelTrangThaiChucNang.getText().equals("EditFile")) {
                     int TraLoi = JOptionPane.showConfirmDialog(null, "Bạn thực sự muốn xóa?", "Xóa Nhật Ký", JOptionPane.YES_NO_OPTION);
                     if (TraLoi == JOptionPane.OK_OPTION) {
                         try {
                             if (nhatkyServices.XoaMotNhatKy(NK)) {
                                 GiaTriMacDinh();
-                                LoadJtreeThuMuc();
+                                DeleteNodeJtreeThuMuc();
                             } else {
                                 JOptionPane.showMessageDialog(FormNhatKy.this, "Xóa thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.DEFAULT_OPTION);
                             }
@@ -269,7 +276,7 @@ public class FormNhatKy extends javax.swing.JFrame {
                                     .getName()).log(Level.SEVERE, null, ex);
                         }
                     }
-                } else if (jLabelTrangThaiFIle.getText().equals("EditFolder")) {
+                } else if (jLabelTrangThaiChucNang.getText().equals("EditFolder")) {
                     try {
                         //Nếu có nhật ký trong thư mục
                         if (nhatkyServices.getAllNhatKyByMaThuMuc(TM).size() > 0) {
@@ -279,7 +286,7 @@ public class FormNhatKy extends javax.swing.JFrame {
                                     if (nhatkyServices.XoaNhieuNhatKy(TM) || thumucServices.XoaThuMuc(TM)) {
                                         JOptionPane.showMessageDialog(FormNhatKy.this, "Xóa thành công.", "Xóa Thư Mục", JOptionPane.DEFAULT_OPTION);
                                         GiaTriMacDinh();
-                                        LoadJtreeThuMuc();
+                                        DeleteNodeJtreeThuMuc();
                                     } else {
                                         JOptionPane.showMessageDialog(FormNhatKy.this, "Xóa thất bại, thử lại.", "Tạo Mới nhật ký", JOptionPane.DEFAULT_OPTION);
                                     }
@@ -288,10 +295,10 @@ public class FormNhatKy extends javax.swing.JFrame {
                                             .getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
-                        }else{
+                        } else {
                             thumucServices.XoaThuMuc(TM);
                             GiaTriMacDinh();
-                            LoadJtreeThuMuc();
+                            DeleteNodeJtreeThuMuc();
                         }
                     } catch (ClassNotFoundException | SQLException ex) {
                         Logger.getLogger(FormNhatKy.class.getName()).log(Level.SEVERE, null, ex);
@@ -312,7 +319,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         NewFolder = new AbstractAction("New Folder") {
             @Override
             public void actionPerformed(ActionEvent e) {
-                jLabelTrangThaiFIle.setText("NewFolder");
+                jLabelTrangThaiChucNang.setText("NewFolder");
                 GiaTriKhiChonNewFolder();
             }
         };
@@ -329,7 +336,7 @@ public class FormNhatKy extends javax.swing.JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("rename");
-                if (jLabelTrangThaiFIle.getText().equals("EditFolder")) {
+                if (jLabelTrangThaiChucNang.getText().equals("EditFolder")) {
                     GiaTriKhiChonRenameFolder();
                 }
             }
@@ -375,7 +382,7 @@ public class FormNhatKy extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jLabelTrangThaiFIle = new javax.swing.JLabel();
+        jLabelTrangThaiChucNang = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jTextFieldNhapTenFolder = new javax.swing.JTextField();
@@ -412,7 +419,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBackground(new java.awt.Color(255, 255, 255));
 
-        jLabelTrangThaiFIle.setEnabled(false);
+        jLabelTrangThaiChucNang.setEnabled(false);
 
         jPanel1.setBackground(new java.awt.Color(241, 243, 229));
 
@@ -437,6 +444,7 @@ public class FormNhatKy extends javax.swing.JFrame {
             }
         });
 
+        jTreeThuMuc.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         javax.swing.tree.DefaultMutableTreeNode treeNode1 = new javax.swing.tree.DefaultMutableTreeNode("root");
         javax.swing.tree.DefaultMutableTreeNode treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("Nhật Ký của tôi");
         javax.swing.tree.DefaultMutableTreeNode treeNode3 = new javax.swing.tree.DefaultMutableTreeNode("Gia Đình");
@@ -477,20 +485,10 @@ public class FormNhatKy extends javax.swing.JFrame {
                 jTreeThuMucMouseClicked(evt);
             }
         });
-        jTreeThuMuc.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
-            public void valueChanged(javax.swing.event.TreeSelectionEvent evt) {
-                jTreeThuMucValueChanged(evt);
-            }
-        });
         jScrollPane1.setViewportView(jTreeThuMuc);
 
         jButtonNewFile.setText("New Diary");
         jButtonNewFile.setToolTipText("Ctrl + N");
-        jButtonNewFile.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonNewFileActionPerformed(evt);
-            }
-        });
 
         jButtonXoa.setText("Delete");
         jButtonXoa.setToolTipText("Ctrl + Del");
@@ -500,11 +498,6 @@ public class FormNhatKy extends javax.swing.JFrame {
 
         jButtonTimKiem.setText("Find");
         jButtonTimKiem.setToolTipText("Ctrl+ F");
-        jButtonTimKiem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonTimKiemActionPerformed(evt);
-            }
-        });
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -662,13 +655,13 @@ public class FormNhatKy extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addContainerGap())
+                        .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
         );
 
         jMenuBar1.setBackground(new java.awt.Color(241, 243, 229));
@@ -733,7 +726,7 @@ public class FormNhatKy extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(968, 968, 968)
-                .addComponent(jLabelTrangThaiFIle)
+                .addComponent(jLabelTrangThaiChucNang)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -746,7 +739,7 @@ public class FormNhatKy extends javax.swing.JFrame {
                     .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(135, 135, 135)
-                        .addComponent(jLabelTrangThaiFIle)))
+                        .addComponent(jLabelTrangThaiChucNang)))
                 .addGap(0, 0, 0))
         );
 
@@ -761,18 +754,6 @@ public class FormNhatKy extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
-    private void jButtonTimKiemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonTimKiemActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButtonTimKiemActionPerformed
-
-    private void jButtonNewFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNewFileActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButtonNewFileActionPerformed
-
-    private void jTreeThuMucValueChanged(javax.swing.event.TreeSelectionEvent evt) {//GEN-FIRST:event_jTreeThuMucValueChanged
-
-    }//GEN-LAST:event_jTreeThuMucValueChanged
-
     private void jTextAreaNoiDungMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTextAreaNoiDungMouseClicked
         jTextAreaNoiDung.requestFocus();//or inWindow
     }//GEN-LAST:event_jTextAreaNoiDungMouseClicked
@@ -782,58 +763,63 @@ public class FormNhatKy extends javax.swing.JFrame {
         int MaThuMuc = -1;
         NhatKy NKCurrent = new NhatKy();
         ThuMuc TMCurrent = new ThuMuc();
-        //jTextFieldNhapTenFolder1.setText(evt.getPath().toString());
-        DefaultMutableTreeNode selectNode = (DefaultMutableTreeNode) jTreeThuMuc.getLastSelectedPathComponent();
-        try {
-            List<NhatKy> nhatkys = nhatkyServices.getAllNhatKyByTaiKhoan(ND);
-            if (nhatkys.size() > 0) {
-                for (NhatKy nhatky : nhatkys) {
-                    if (nhatky.getTenNhatKy().equals(selectNode.getUserObject().toString())) {
-                        MaNhatKy = nhatky.getMaNhatKy();
-                        break;
-                    }
-                }
+        TreeSelectionModel smd = jTreeThuMuc.getSelectionModel();
+        if (jLabelTrangThaiChucNang.getText().equals("NewFile") && !jTextAreaNoiDung.getText().trim().equals("")) {
+            if (JOptionPane.showConfirmDialog(this, "Bạn có muốn lưu file này không?", "Save Diary", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                jButtonNewFile.doClick();
             }
-            if (MaNhatKy != -1) { //là nhật ký
-                GiaTriKhiChonNhatKyTrenJTree();
-
-                jLabelTrangThaiFIle.setText("EditFile");
-                NKCurrent = nhatkyServices.getNhatKyByMaNhatKy(MaNhatKy);
-                NK.setMaNhatKy(NKCurrent.getMaNhatKy());
-                NK.setMaThuMuc(TM.getMaThuMuc());
-                NK.setMaThuMuc(NKCurrent.getMaThuMuc());
-                NK.setTenNhatKy(NKCurrent.getTenNhatKy());
-                NK.setNgayTao(NKCurrent.getNgayTao());
-                NK.setNgayChinhSuaCuoiCung(NKCurrent.getNgayChinhSuaCuoiCung());
-                NK.setNoiDung(NKCurrent.getNoiDung());
-                //load nhật ký ra màn hình
-                LoadNhatKy();
-            } else //là thư mục
-            {
-                jLabelTrangThaiFIle.setText("EditFolder");
-                GiaTriKhiChonThuMucTrenJTree();
-                List<ThuMuc> thumucs = thumucServices.getAllThuMuc(ND);
-                if (thumucs.size() > 0) {
-                    for (ThuMuc thumuc : thumucs) {
-                        if (thumuc.getTenThuMuc().equals(selectNode.getUserObject().toString())) {
-                            MaThuMuc = thumuc.getMaThuMuc();
+        }
+        if (smd.getSelectionCount() > 0) {
+            DefaultMutableTreeNode selectNode = (DefaultMutableTreeNode) jTreeThuMuc.getSelectionPath().getLastPathComponent();
+            try {
+                List<NhatKy> nhatkys = nhatkyServices.getAllNhatKyByTaiKhoan(ND);
+                if (nhatkys.size() > 0) {
+                    for (NhatKy nhatky : nhatkys) {
+                        if (nhatky.getTenNhatKy().equals(selectNode.getUserObject().toString())) {
+                            MaNhatKy = nhatky.getMaNhatKy();
                             break;
                         }
                     }
                 }
-                if (MaThuMuc != -1) { //Tìm thấy thư mục
-                    jTextFieldNhapTenFolder.setText(selectNode.getUserObject().toString());
-                    TMCurrent = thumucServices.getThuMucByID(MaThuMuc);
-                    TM.setMaThuMuc(TMCurrent.getMaThuMuc());
-                    TM.setTaiKhoan(TMCurrent.getTaiKhoan());
-                    TM.setTenThuMuc(TMCurrent.getTenThuMuc());
+                if (MaNhatKy != -1) { //là nhật ký
+                    GiaTriKhiChonNhatKyTrenJTree();
+                    jLabelTrangThaiChucNang.setText("EditFile");
+                    NKCurrent = nhatkyServices.getNhatKyByMaNhatKy(MaNhatKy);
+                    NK.setMaNhatKy(NKCurrent.getMaNhatKy());
+                    NK.setMaThuMuc(TM.getMaThuMuc());
+                    NK.setMaThuMuc(NKCurrent.getMaThuMuc());
+                    NK.setTenNhatKy(NKCurrent.getTenNhatKy());
+                    NK.setNgayTao(NKCurrent.getNgayTao());
+                    NK.setNgayChinhSuaCuoiCung(NKCurrent.getNgayChinhSuaCuoiCung());
+                    NK.setNoiDung(NKCurrent.getNoiDung());
+                    //load nhật ký ra màn hình
+                    LoadNhatKy();
+                } else //là thư mục
+                {
+                    jLabelTrangThaiChucNang.setText("EditFolder");
+                    GiaTriKhiChonThuMucTrenJTree();
+                    List<ThuMuc> thumucs = thumucServices.getAllThuMuc(ND);
+                    if (thumucs.size() > 0) {
+                        for (ThuMuc thumuc : thumucs) {
+                            if (thumuc.getTenThuMuc().equals(selectNode.getUserObject().toString())) {
+                                MaThuMuc = thumuc.getMaThuMuc();
+                                break;
+                            }
+                        }
+                    }
+                    if (MaThuMuc != -1) { //Tìm thấy thư mục
+                        jTextFieldNhapTenFolder.setText(selectNode.getUserObject().toString());
+                        TMCurrent = thumucServices.getThuMucByID(MaThuMuc);
+                        TM.setMaThuMuc(TMCurrent.getMaThuMuc());
+                        TM.setTaiKhoan(TMCurrent.getTaiKhoan());
+                        TM.setTenThuMuc(TMCurrent.getTenThuMuc());
+                    }
                 }
+            } catch (ClassNotFoundException | SQLException ex) {
+                Logger.getLogger(FormNhatKy.class
+                        .getName()).log(Level.SEVERE, null, ex);
+            } finally {
             }
-
-        } catch (ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(FormNhatKy.class
-                    .getName()).log(Level.SEVERE, null, ex);
-        } finally {
         }
     }//GEN-LAST:event_jTreeThuMucMouseClicked
 
@@ -887,7 +873,7 @@ public class FormNhatKy extends javax.swing.JFrame {
     }
 
     private void GiaTriMacDinh() {
-        jLabelTrangThaiFIle.setText("NewFile");
+        jLabelTrangThaiChucNang.setText("NewFile");
         jButtonTimKiem.setEnabled(true);
         jButtonXoa.setEnabled(false);
         jButtonNewFile.setEnabled(false);
@@ -931,7 +917,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         jTextAreaNoiDung.setText("");
     }
 
-    private void GiaTriKhiChonNhatKyTrenJTree() {
+    public static void GiaTriKhiChonNhatKyTrenJTree() {
         jButtonTimKiem.setEnabled(true);
         jButtonXoa.setEnabled(true);
         jButtonNewFile.setEnabled(true);
@@ -947,7 +933,7 @@ public class FormNhatKy extends javax.swing.JFrame {
     }
 
     private void GiaTriKhiChonNewFolder() {
-        jLabelTrangThaiFIle.setText("NewFolder");
+        jLabelTrangThaiChucNang.setText("NewFolder");
         jButtonTimKiem.setEnabled(false);
         jButtonNewFile.setEnabled(false);
         jButtonNewFolder.setEnabled(false);
@@ -970,7 +956,7 @@ public class FormNhatKy extends javax.swing.JFrame {
     }
 
     private void GiaTriKhiChonRenameFolder() {
-        jLabelTrangThaiFIle.setText("RenameFolder");
+        jLabelTrangThaiChucNang.setText("RenameFolder");
         jButtonTimKiem.setEnabled(false);
         jButtonNewFile.setEnabled(false);
         jButtonNewFolder.setEnabled(false);
@@ -1036,6 +1022,15 @@ public class FormNhatKy extends javax.swing.JFrame {
         });
     }
 
+    private void SetCusor() {
+        jButtonLuuLai.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonNewFile.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonNewFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonReNameFolder.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonTimKiem.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jButtonXoa.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
     private void CreateTableFind() throws ClassNotFoundException, SQLException {
         TableFind TableFind = new TableFind();
         TableFind.setBounds(jPanel6.getX(), jPanel6.getY(), jPanel6.getWidth() - 50, jPanel6.getHeight());
@@ -1048,17 +1043,17 @@ public class FormNhatKy extends javax.swing.JFrame {
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     public static javax.swing.JButton jButtonLuuLai;
-    private javax.swing.JButton jButtonNewFile;
+    public static javax.swing.JButton jButtonNewFile;
     public static javax.swing.JButton jButtonNewFolder;
     public static javax.swing.JButton jButtonReNameFolder;
     public static javax.swing.JButton jButtonTimKiem;
-    private javax.swing.JButton jButtonXoa;
+    public static javax.swing.JButton jButtonXoa;
     private javax.swing.JLabel jLabel1;
     public static javax.swing.JLabel jLabelNgayTao;
     public static javax.swing.JLabel jLabelSuaLanCuoi;
     public static javax.swing.JLabel jLabelThongTinFile;
     private javax.swing.JLabel jLabelThongTinFile3;
-    private javax.swing.JLabel jLabelTrangThaiFIle;
+    private javax.swing.JLabel jLabelTrangThaiChucNang;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;

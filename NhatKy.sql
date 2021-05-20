@@ -2,15 +2,15 @@ CREATE DATABASE NhatKy;
 USE NhatKy;
 CREATE TABLE NguoiDung
 (
-    TaiKhoan NVARCHAR(50) NOT NULL,
-    MatKhau NVARCHAR(50),
+    TaiKhoan VARCHAR(50) NOT NULL,
+    MatKhau VARCHAR(50),
     PRIMARY KEY(TaiKhoan)
 );
 CREATE TABLE ThuMuc
 (
     MaThuMuc INT AUTO_INCREMENT,
-    TaiKhoan NVARCHAR(50),
-    TenThuMuc NVARCHAR(50),
+    TaiKhoan VARCHAR(50),
+    TenThuMuc VARCHAR(50),
     FOREIGN KEY(TaiKhoan) REFERENCES NguoiDung(TaiKhoan),
     PRIMARY KEY(MaThuMuc)
 );
@@ -18,9 +18,9 @@ CREATE TABLE NhatKy
 (
     MaNhatKy INT AUTO_INCREMENT,
     MaThuMuc INT,
-    TenNhatKy NVARCHAR(200),
-    NgayTao NVARCHAR(50),
-    NgayChinhSuaCuoiCung NVARCHAR(50),
+    TenNhatKy VARCHAR(200),
+    NgayTao VARCHAR(50),
+    NgayChinhSuaCuoiCung VARCHAR(50),
     NoiDung LONGTEXT,
     FOREIGN KEY(MaThuMuc) REFERENCES ThuMuc(MaThuMuc),
     PRIMARY KEY(MaNhatKy)
@@ -66,4 +66,3 @@ Tình yêu đi em không hề hối tiếc
 Ngày xa xưa em hát với dòng sông
 Và giờ đây em hát giữa dòng đời
 Dù dòng đời... không êm ái như dòng sông...');
-SELECT count(*) AS DemTaiKhoan FROM NguoiDung WHERE TaiKhoan = 'admin' AND MatKhau = 'admin' 

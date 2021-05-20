@@ -12,7 +12,7 @@ public class ConnectMySQL {
 
     public static Connection getJDBCConnection() throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.jdbc.Driver");
-        String url = "jdbc:mysql://localhost:3306/NhatKy?useSSL=false";
+        String url = "jdbc:mysql://localhost:3306/Diary?useSSL=false";
         String user = "root";
         String password = "";
         Connection connection = (Connection) DriverManager.getConnection(url, user, password);

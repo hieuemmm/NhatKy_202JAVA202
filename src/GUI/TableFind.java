@@ -63,6 +63,7 @@ public class TableFind extends javax.swing.JPanel {
                     } catch (ClassNotFoundException | SQLException ex) {
                         Logger.getLogger(TableFind.class.getName()).log(Level.SEVERE, null, ex);
                     } finally {
+                        FormNhatKy.GiaTriKhiChonNhatKyTrenJTree();
                         FormNhatKy.jPanel6.setVisible(true);
                         jButtonClose.setVisible(false);
                     }
@@ -111,6 +112,7 @@ public class TableFind extends javax.swing.JPanel {
         jButtonClose = new javax.swing.JButton();
 
         jTableNhatKy.setBorder(javax.swing.BorderFactory.createEtchedBorder(javax.swing.border.EtchedBorder.RAISED));
+        jTableNhatKy.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jTableNhatKy.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
@@ -147,9 +149,10 @@ public class TableFind extends javax.swing.JPanel {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 487, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 463, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButtonClose, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jButtonClose, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);

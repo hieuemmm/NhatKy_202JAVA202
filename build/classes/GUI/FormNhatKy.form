@@ -125,7 +125,7 @@
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" attributes="0">
               <EmptySpace min="-2" pref="968" max="-2" attributes="0"/>
-              <Component id="jLabelTrangThaiFIle" min="-2" max="-2" attributes="0"/>
+              <Component id="jLabelTrangThaiChucNang" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="32767" attributes="0"/>
           </Group>
           <Group type="102" alignment="0" attributes="0">
@@ -141,7 +141,7 @@
                   <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace min="-2" pref="135" max="-2" attributes="0"/>
-                      <Component id="jLabelTrangThaiFIle" min="-2" max="-2" attributes="0"/>
+                      <Component id="jLabelTrangThaiChucNang" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
               <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
@@ -150,7 +150,7 @@
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Component class="javax.swing.JLabel" name="jLabelTrangThaiFIle">
+    <Component class="javax.swing.JLabel" name="jLabelTrangThaiChucNang">
       <Properties>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
@@ -316,6 +316,9 @@
               <SubComponents>
                 <Component class="javax.swing.JTree" name="jTreeThuMuc">
                   <Properties>
+                    <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                      <Font name="Segoe UI" size="14" style="0"/>
+                    </Property>
                     <Property name="model" type="javax.swing.tree.TreeModel" editor="org.netbeans.modules.form.editors2.TreeModelEditor">
                       <TreeModel code="Nh&#x1ead;t K&#xfd; c&#x1ee7;a t&#xf4;i&#xa; Gia &#x110;&#xec;nh&#xa;  d&#x1ea1; th&#x1ea7;y &#x1a1;i,h&#xf4;m tr&#x1b0;&#x1edb;c th&#x1ea7;y b&#x1ea3;o l&#xe0; ng&#xe0;y 15/5 m&#xe0; th&#x1ea7;y, th&#x1ea7;y &#x111;&#x1ed5;i h&#x1ea1;n l&#x1ea1;i qua ng&#xe0;y mai &#x111;&#x1b0;&#x1ee3;c ko &#x1ea1;&#xa;  violet&#xa;  red&#xa;  yellow&#xa;B&#x1ea1;n B&#xe8;&#xa;  basketball&#xa;  soccer&#xa;  football&#xa;  hockey&#xa;C&#xf4;ng Vi&#x1ec7;c&#xa;  hot dogs&#xa;  pizza&#xa;  ravioli&#xa;  bananas"/>
                     </Property>
@@ -323,7 +326,6 @@
                   </Properties>
                   <Events>
                     <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="jTreeThuMucMouseClicked"/>
-                    <EventHandler event="valueChanged" listener="javax.swing.event.TreeSelectionListener" parameters="javax.swing.event.TreeSelectionEvent" handler="jTreeThuMucValueChanged"/>
                   </Events>
                   <AuxValues>
                     <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="9"/>
@@ -336,15 +338,18 @@
                 <Property name="text" type="java.lang.String" value="New Diary"/>
                 <Property name="toolTipText" type="java.lang.String" value="Ctrl + N"/>
               </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonNewFileActionPerformed"/>
-              </Events>
+              <AuxValues>
+                <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="9"/>
+              </AuxValues>
             </Component>
             <Component class="javax.swing.JButton" name="jButtonXoa">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Delete"/>
                 <Property name="toolTipText" type="java.lang.String" value="Ctrl + Del"/>
               </Properties>
+              <AuxValues>
+                <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="9"/>
+              </AuxValues>
             </Component>
             <Component class="javax.swing.JTextField" name="jTextFieldTimKiem">
               <Properties>
@@ -364,9 +369,6 @@
                 <Property name="text" type="java.lang.String" value="Find"/>
                 <Property name="toolTipText" type="java.lang.String" value="Ctrl+ F"/>
               </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonTimKiemActionPerformed"/>
-              </Events>
               <AuxValues>
                 <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="9"/>
               </AuxValues>
