@@ -11,14 +11,26 @@ import DAO.ThuMucServices;
 import NhatKy.NguoiDung;
 import NhatKy.NhatKy;
 import NhatKy.ThuMuc;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -45,9 +57,13 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
+import javax.swing.text.Document;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import javax.swing.undo.UndoManager;
 import sun.applet.Main;
@@ -65,6 +81,7 @@ public class FormNhatKy extends javax.swing.JFrame {
     public static NguoiDung ND;
     public static NhatKy NK;
     private static ThuMuc TM;
+    private int pos = 0;
 
     /**
      * Creates new form FormNhatKy
@@ -78,7 +95,9 @@ public class FormNhatKy extends javax.swing.JFrame {
         //UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());chuối
         initComponents();
         CreateTableFind();
-        //ZoomjTextArea();
+        ZoomjTextArea();
+        jTextAreaDiary.setWrapStyleWord(true);
+        jTextAreaDiary.setLineWrap(true);
         centerFrame();
         ND = nguoidung;
         TM = new ThuMuc();
@@ -89,7 +108,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         //this.setResizable(false);
         LoadJtreeThuMuc();
         SetCusor();
-        jTextAreaNoiDung.setLineWrap(true);
+        jTextAreaDiary.setLineWrap(true);
         jLabelTrangThaiChucNang.setVisible(false);
 
         //Lắng nghe sự kiện
@@ -99,6 +118,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         SuKienNewFolder();
         SuKienRenameFolder();
         SuKienTimKiem();
+        FindText();
         //Set Giá trị mặc định 
         GiaTriMacDinh();
     }
@@ -137,7 +157,7 @@ public class FormNhatKy extends javax.swing.JFrame {
                         }
                         NK.setNgayTao(jLabelNgayTao.getText().substring(10, jLabelNgayTao.getText().length()));
                         NK.setNgayChinhSuaCuoiCung(jLabelSuaLanCuoi.getText().substring(14, jLabelSuaLanCuoi.getText().length()));
-                        NK.setNoiDung(jTextAreaNoiDung.getText());
+                        NK.setNoiDung(jTextAreaDiary.getText());
                         try {
                             if (nhatkyServices.KiemTraNhatKyTonTai(NK, ND)) {
                                 JOptionPane.showMessageDialog(FormNhatKy.this, "Tên nhật ký đã tồn tại", "Tạo Mới nhật ký", JOptionPane.WARNING_MESSAGE);
@@ -165,7 +185,7 @@ public class FormNhatKy extends javax.swing.JFrame {
                         } else {
                             NK.setTenNhatKy(jTextFieldNhapTenNhatKy.getText());
                         }
-                        NK.setNoiDung(jTextAreaNoiDung.getText());
+                        NK.setNoiDung(jTextAreaDiary.getText());
                         NK.setNgayChinhSuaCuoiCung(LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
                         try {
                             if (nhatkyServices.SuaNhatKy(NK)) {
@@ -376,7 +396,7 @@ public class FormNhatKy extends javax.swing.JFrame {
 
     public static void LoadNhatKy() {
         jTextFieldNhapTenNhatKy.setText(NK.getTenNhatKy());
-        jTextAreaNoiDung.setText(NK.getNoiDung());
+        jTextAreaDiary.setText(NK.getNoiDung());
         jLabelThongTinFile.setText(TinhKhoanCachHaiNgay(NK.getNgayTao().substring(0, 10), LocalDate.now().toString()));
         jLabelNgayTao.setText("Ngày tạo: " + NK.getNgayTao());
         jLabelSuaLanCuoi.setText("Sửa lần cuối: " + NK.getNgayChinhSuaCuoiCung());
@@ -423,14 +443,14 @@ public class FormNhatKy extends javax.swing.JFrame {
         jTextFieldTimKiem.setEditable(true);
         jTextFieldNhapTenNhatKy.setEditable(true);
         jTextFieldNhapTenFolder.setEditable(false);
-        jTextAreaNoiDung.setEditable(true);
-        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+        jTextAreaDiary.setEditable(true);
+        jTextAreaDiary.setBackground(new Color(255, 255, 255));
 
         jTextFieldTimKiem.setText("");
         jTextFieldNhapTenNhatKy.setText("");
         jTextFieldNhapTenFolder.setText("");
-        jTextAreaNoiDung.setText("");
-        jTextAreaNoiDung.requestFocus();
+        jTextAreaDiary.setText("");
+        jTextAreaDiary.requestFocus();
         jLabelNgayTao.setText("Ngày tạo: " + LocalDate.now().toString() + " Lúc " + LocalTime.now().toString().substring(0, 5));
         jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào");
         jLabelThongTinFile.setText("Cách đây 00 ngày.");
@@ -447,13 +467,13 @@ public class FormNhatKy extends javax.swing.JFrame {
         jTextFieldTimKiem.setEditable(true);
         jTextFieldNhapTenNhatKy.setEditable(false);
         jTextFieldNhapTenFolder.setEditable(false);
-        jTextAreaNoiDung.setEditable(false);
-        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+        jTextAreaDiary.setEditable(false);
+        jTextAreaDiary.setBackground(new Color(240, 240, 240));
 
         jTextFieldTimKiem.setText("");
         jTextFieldNhapTenNhatKy.setText("");
         jTextFieldNhapTenFolder.setText("");
-        jTextAreaNoiDung.setText("");
+        jTextAreaDiary.setText("");
     }
 
     public static void GiaTriKhiChonNhatKyTrenJTree() {
@@ -467,8 +487,8 @@ public class FormNhatKy extends javax.swing.JFrame {
         jTextFieldTimKiem.setEditable(true);
         jTextFieldNhapTenNhatKy.setEditable(true);
         jTextFieldNhapTenFolder.setEditable(false);
-        jTextAreaNoiDung.setEditable(true);
-        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+        jTextAreaDiary.setEditable(true);
+        jTextAreaDiary.setBackground(new Color(255, 255, 255));
     }
 
     private void GiaTriKhiChonNewFolder() {
@@ -483,13 +503,13 @@ public class FormNhatKy extends javax.swing.JFrame {
         jTextFieldTimKiem.setEditable(false);
         jTextFieldNhapTenNhatKy.setEditable(false);
         jTextFieldNhapTenFolder.setEditable(true);
-        jTextAreaNoiDung.setEditable(false);
-        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+        jTextAreaDiary.setEditable(false);
+        jTextAreaDiary.setBackground(new Color(240, 240, 240));
 
         jTextFieldTimKiem.setText("");
         jTextFieldNhapTenNhatKy.setText("");
         jTextFieldNhapTenFolder.setText("");
-        jTextAreaNoiDung.setText("");
+        jTextAreaDiary.setText("");
 
         jTextFieldNhapTenFolder.requestFocus();
     }
@@ -506,13 +526,13 @@ public class FormNhatKy extends javax.swing.JFrame {
         jTextFieldTimKiem.setEditable(false);
         jTextFieldNhapTenNhatKy.setEditable(false);
         jTextFieldNhapTenFolder.setEditable(true);
-        jTextAreaNoiDung.setEditable(false);
-        jTextAreaNoiDung.setBackground(new Color(240, 240, 240));
+        jTextAreaDiary.setEditable(false);
+        jTextAreaDiary.setBackground(new Color(240, 240, 240));
 
         jTextFieldTimKiem.setText("");
         jTextFieldNhapTenNhatKy.setText("");
         jTextFieldNhapTenFolder.setText(TM.getTenThuMuc());
-        jTextAreaNoiDung.setText("");
+        jTextAreaDiary.setText("");
 
         jTextFieldNhapTenFolder.requestFocus();
     }
@@ -528,14 +548,14 @@ public class FormNhatKy extends javax.swing.JFrame {
         jTextFieldTimKiem.setEditable(false);
         jTextFieldNhapTenNhatKy.setEditable(true);
         jTextFieldNhapTenFolder.setEditable(false);
-        jTextAreaNoiDung.setEditable(true);
-        jTextAreaNoiDung.setBackground(new Color(255, 255, 255));
+        jTextAreaDiary.setEditable(true);
+        jTextAreaDiary.setBackground(new Color(255, 255, 255));
 
         jTextFieldTimKiem.setText("");
         jTextFieldNhapTenNhatKy.setText("");
         jTextFieldNhapTenFolder.setText("");
-        jTextAreaNoiDung.setText("");
-        jTextAreaNoiDung.requestFocus();
+        jTextAreaDiary.setText("");
+        jTextAreaDiary.requestFocus();
     }
 
     private void centerFrame() {
@@ -549,14 +569,59 @@ public class FormNhatKy extends javax.swing.JFrame {
     }
 
     private void ZoomjTextArea() {
-        jTextAreaNoiDung.addMouseWheelListener(mouseWheelEvent -> {
-            if (mouseWheelEvent.isControlDown()) {
-                jTextAreaNoiDung.setFont(new Font(
-                        jTextAreaNoiDung.getFont().getFontName(),
-                        jTextAreaNoiDung.getFont().getStyle(),
-                        mouseWheelEvent.getUnitsToScroll() > 0
-                        ? jTextAreaNoiDung.getFont().getSize() - 2
-                        : jTextAreaNoiDung.getFont().getSize() + 2));
+        jScrollPane.addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
+                if (evt.isControlDown()) {
+                    jTextAreaDiary.setFont(new java.awt.Font(jTextAreaDiary.getFont().getFontName(), jTextAreaDiary.getFont().getStyle(),
+                            evt.getUnitsToScroll() > 0 ? jTextAreaDiary.getFont().getSize() - 1
+                            : jTextAreaDiary.getFont().getSize() + 1));
+                }
+            }
+        });
+    }
+
+    private void FindText() {
+        findButton.addActionListener((ActionEvent e) -> {
+            // Lấy văn bản cần tìm ... chuyển nó thành chữ thường để so sánh dễ dàng hơn
+            String find = jTextFindtext.getText().toLowerCase();
+            // Focus vào JtextArea, nếu không phần tô sáng sẽ không hiển thị
+            jTextAreaDiary.requestFocusInWindow();
+            // Từ khóa hợp lệ
+            if (find != null && find.length() > 0) {
+                Document document = jTextAreaDiary.getDocument();
+                int findLength = find.length();
+                try {
+                    boolean found = false;
+                    // Nếu từ khóa dài hơn text của Arera
+                    if (pos + findLength > document.getLength()) {
+                        pos = 0;
+                    }
+                    while (pos + findLength <= document.getLength()) {
+                        // Lấy văn bản tìm kiếm ra
+                        String match = document.getText(pos, findLength).toLowerCase();
+                        // Khớp với từ khóa không
+                        if (match.equals(find)) {
+                            found = true;
+                            break;
+                        }
+                        pos++;
+                    }
+                    // Nếu tìm thấy
+                    if (found) {
+                        // Lấy hình chữ nhật nơi văn bản sẽ hiển thị ...
+                        Rectangle viewRect = jTextAreaDiary.modelToView(pos);
+                        // Cuộn để hiển thị hình chữ nhật
+                        jTextAreaDiary.scrollRectToVisible(viewRect);
+                        // Đánh dấu văn bản
+                        jTextAreaDiary.setCaretPosition(pos + findLength);
+                        jTextAreaDiary.moveCaretPosition(pos);
+                        // Di chuyển vị trí tìm kiếm ra ngoài kết quả phù hợp hiện tại
+                        pos += findLength;
+                    }
+
+                } catch (BadLocationException exp) {
+                }
             }
         });
     }
@@ -601,10 +666,12 @@ public class FormNhatKy extends javax.swing.JFrame {
         jPanel5 = new javax.swing.JPanel();
         jTextFieldNhapTenNhatKy = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
+        jTextFindtext = new javax.swing.JTextField();
+        findButton = new javax.swing.JButton();
         jPanel6 = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jTextAreaNoiDung = new javax.swing.JTextArea();
-        jPanel4 = new javax.swing.JPanel();
+        jScrollPane = new javax.swing.JScrollPane();
+        jTextAreaDiary = new javax.swing.JTextArea();
+        jPaneltH = new javax.swing.JPanel();
         jLabelThongTinFile3 = new javax.swing.JLabel();
         jLabelThongTinFile = new javax.swing.JLabel();
         jLabelNgayTao = new javax.swing.JLabel();
@@ -620,6 +687,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         jMenuItem6 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Diary Edittor");
         setBackground(new java.awt.Color(255, 255, 255));
 
         jLabelTrangThaiChucNang.setEnabled(false);
@@ -627,6 +695,8 @@ public class FormNhatKy extends javax.swing.JFrame {
         jPanel1.setBackground(new java.awt.Color(241, 243, 229));
 
         jPanel3.setBackground(new java.awt.Color(241, 243, 229));
+
+        jTextFieldNhapTenFolder.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
         jButtonNewFolder.setText("New Folder");
         jButtonNewFolder.setToolTipText("Shift + N");
@@ -680,15 +750,19 @@ public class FormNhatKy extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(jTreeThuMuc);
 
+        jButtonNewFile.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jButtonNewFile.setText("New Diary");
         jButtonNewFile.setToolTipText("Ctrl + N");
 
+        jButtonXoa.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jButtonXoa.setText("Delete");
         jButtonXoa.setToolTipText("Ctrl + Del");
 
+        jTextFieldTimKiem.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jTextFieldTimKiem.setMinimumSize(new java.awt.Dimension(34, 20));
         jTextFieldTimKiem.setPreferredSize(new java.awt.Dimension(34, 20));
 
+        jButtonTimKiem.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jButtonTimKiem.setText("Find");
         jButtonTimKiem.setToolTipText("Ctrl+ F");
 
@@ -738,38 +812,58 @@ public class FormNhatKy extends javax.swing.JFrame {
 
         jPanel5.setBackground(new java.awt.Color(241, 243, 229));
 
-        jLabel1.setText("Name Diary :");
+        jTextFieldNhapTenNhatKy.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+
+        jLabel1.setText("Diary Name:");
+
+        jTextFindtext.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+
+        findButton.setText("Next");
+        findButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                findButtonActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
         jPanel5Layout.setHorizontalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                .addGap(0, 0, 0)
+                .addContainerGap()
                 .addComponent(jLabel1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jTextFieldNhapTenNhatKy, javax.swing.GroupLayout.PREFERRED_SIZE, 748, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jTextFieldNhapTenNhatKy, javax.swing.GroupLayout.DEFAULT_SIZE, 491, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jTextFindtext, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(findButton, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldNhapTenNhatKy, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel1)))
+                .addContainerGap()
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jTextFieldNhapTenNhatKy, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel1)))
+                    .addComponent(jTextFindtext)
+                    .addComponent(findButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
 
-        jTextAreaNoiDung.setColumns(20);
-        jTextAreaNoiDung.setFont(new java.awt.Font("Consolas", 0, 17)); // NOI18N
-        jTextAreaNoiDung.setRows(5);
-        jTextAreaNoiDung.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
-        jTextAreaNoiDung.setRequestFocusEnabled(false);
-        jTextAreaNoiDung.addMouseListener(new java.awt.event.MouseAdapter() {
+        jTextAreaDiary.setColumns(20);
+        jTextAreaDiary.setFont(new java.awt.Font("Segoe UI", 0, 11)); // NOI18N
+        jTextAreaDiary.setRows(5);
+        jTextAreaDiary.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
+        jTextAreaDiary.setRequestFocusEnabled(false);
+        jTextAreaDiary.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jTextAreaNoiDungMouseClicked(evt);
+                jTextAreaDiaryMouseClicked(evt);
             }
         });
-        jScrollPane2.setViewportView(jTextAreaNoiDung);
+        jScrollPane.setViewportView(jTextAreaDiary);
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -777,40 +871,44 @@ public class FormNhatKy extends javax.swing.JFrame {
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 807, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 807, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 557, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 557, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
 
+        jLabelThongTinFile3.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabelThongTinFile3.setText("Thông tin nhật ký:");
 
+        jLabelThongTinFile.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabelThongTinFile.setText("Cách đây 10 ngày");
 
+        jLabelNgayTao.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabelNgayTao.setText("Ngày Tạo: 12/05/2020 17:31 PM ");
 
+        jLabelSuaLanCuoi.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabelSuaLanCuoi.setText("Sửa lần cuối: Chưa sửa lần nào.");
 
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
+        javax.swing.GroupLayout jPaneltHLayout = new javax.swing.GroupLayout(jPaneltH);
+        jPaneltH.setLayout(jPaneltHLayout);
+        jPaneltHLayout.setHorizontalGroup(
+            jPaneltHLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPaneltHLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPaneltHLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabelThongTinFile)
                     .addComponent(jLabelNgayTao)
                     .addComponent(jLabelSuaLanCuoi)
                     .addComponent(jLabelThongTinFile3))
                 .addContainerGap(111, Short.MAX_VALUE))
         );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
+        jPaneltHLayout.setVerticalGroup(
+            jPaneltHLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPaneltHLayout.createSequentialGroup()
                 .addComponent(jLabelThongTinFile3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabelThongTinFile)
@@ -829,14 +927,14 @@ public class FormNhatKy extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jPaneltH, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 7, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addContainerGap())))
         );
@@ -852,7 +950,7 @@ public class FormNhatKy extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jPaneltH, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -915,10 +1013,10 @@ public class FormNhatKy extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(968, 968, 968)
                 .addComponent(jLabelTrangThaiChucNang)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(225, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -934,9 +1032,9 @@ public class FormNhatKy extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jTextAreaNoiDungMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTextAreaNoiDungMouseClicked
-        jTextAreaNoiDung.requestFocus();
-    }//GEN-LAST:event_jTextAreaNoiDungMouseClicked
+    private void jTextAreaDiaryMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTextAreaDiaryMouseClicked
+        jTextAreaDiary.requestFocus();
+    }//GEN-LAST:event_jTextAreaDiaryMouseClicked
 
     private void jTreeThuMucMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTreeThuMucMouseClicked
         int MaNhatKy = -1;
@@ -944,7 +1042,7 @@ public class FormNhatKy extends javax.swing.JFrame {
         NhatKy NKCurrent = new NhatKy();
         ThuMuc TMCurrent = new ThuMuc();
         TreeSelectionModel smd = jTreeThuMuc.getSelectionModel();
-        if (jLabelTrangThaiChucNang.getText().equals("NewFile") && !jTextAreaNoiDung.getText().trim().equals("")) {
+        if (jLabelTrangThaiChucNang.getText().equals("NewFile") && !jTextAreaDiary.getText().trim().equals("")) {
             if (JOptionPane.showConfirmDialog(this, "Bạn có muốn lưu file này không?", "Save Diary", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 jButtonNewFile.doClick();
             }
@@ -1012,7 +1110,12 @@ public class FormNhatKy extends javax.swing.JFrame {
         new DoiMatKhau().setVisible(true);
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
+    private void findButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_findButtonActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_findButtonActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton findButton;
     public static javax.swing.JButton jButtonLuuLai;
     public static javax.swing.JButton jButtonNewFile;
     public static javax.swing.JButton jButtonNewFolder;
@@ -1036,15 +1139,16 @@ public class FormNhatKy extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     public static javax.swing.JPanel jPanel6;
+    private javax.swing.JPanel jPaneltH;
+    private javax.swing.JScrollPane jScrollPane;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
-    public static javax.swing.JTextArea jTextAreaNoiDung;
+    public static javax.swing.JTextArea jTextAreaDiary;
     public static javax.swing.JTextField jTextFieldNhapTenFolder;
     public static javax.swing.JTextField jTextFieldNhapTenNhatKy;
     public static javax.swing.JTextField jTextFieldTimKiem;
+    private javax.swing.JTextField jTextFindtext;
     public static javax.swing.JTree jTreeThuMuc;
     // End of variables declaration//GEN-END:variables
 

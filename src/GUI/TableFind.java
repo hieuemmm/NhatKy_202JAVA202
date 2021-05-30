@@ -111,6 +111,8 @@ public class TableFind extends javax.swing.JPanel {
         jTableNhatKy = new javax.swing.JTable();
         jButtonClose = new javax.swing.JButton();
 
+        setToolTipText("Find Diary");
+
         jTableNhatKy.setBorder(javax.swing.BorderFactory.createEtchedBorder(javax.swing.border.EtchedBorder.RAISED));
         jTableNhatKy.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jTableNhatKy.setModel(new javax.swing.table.DefaultTableModel(
