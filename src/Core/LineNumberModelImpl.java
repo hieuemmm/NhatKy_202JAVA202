@@ -5,7 +5,7 @@
  */
 package Core;
 
-import GUI.FormNhatKy;
+import Views.FormNhatKy;
 import java.awt.Rectangle;
 import javax.swing.text.BadLocationException;
 
