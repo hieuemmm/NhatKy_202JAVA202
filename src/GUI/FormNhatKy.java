@@ -5,6 +5,8 @@
  */
 package GUI;
 
+import Core.LineNumberComponent;
+import Core.LineNumberModelImpl;
 import DAO.NguoiDungServices;
 import DAO.NhatKyServices;
 import DAO.ThuMucServices;
@@ -21,10 +23,12 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.io.File;
@@ -45,6 +49,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -55,7 +61,11 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
@@ -65,6 +75,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
+import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 import sun.applet.Main;
 
@@ -82,6 +93,10 @@ public class FormNhatKy extends javax.swing.JFrame {
     public static NhatKy NK;
     private static ThuMuc TM;
     private int pos = 0;
+    private final UndoManager undoManager;//undo textarea
+    private static String StringFind = "";
+    private final LineNumberModelImpl lineNumberModel = new LineNumberModelImpl();
+    private LineNumberComponent lineNumberComponent = new LineNumberComponent(lineNumberModel);
 
     /**
      * Creates new form FormNhatKy
@@ -105,7 +120,8 @@ public class FormNhatKy extends javax.swing.JFrame {
         TM.setMaThuMuc(1);
         thumucServices = new ThuMucServices();
         nhatkyServices = new NhatKyServices();
-        //this.setResizable(false);
+        undoManager = new UndoManager();
+        this.setResizable(false);
         LoadJtreeThuMuc();
         SetCusor();
         jTextAreaDiary.setLineWrap(true);
@@ -118,7 +134,9 @@ public class FormNhatKy extends javax.swing.JFrame {
         SuKienNewFolder();
         SuKienRenameFolder();
         SuKienTimKiem();
-        FindText();
+        SuKienFindText();
+        SuKienUndoRedo();
+        LineNumber();
         //Set Giá trị mặc định 
         GiaTriMacDinh();
     }
@@ -365,8 +383,89 @@ public class FormNhatKy extends javax.swing.JFrame {
         };
         String keyFind = "Find";
         jButtonTimKiem.setAction(FindNhatKy);
-        jButtonTimKiem.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK), keyFind);
+        jButtonTimKiem.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK), keyFind);
         jButtonTimKiem.getActionMap().put(keyFind, FindNhatKy);
+    }
+
+    private void SuKienFindText() {
+        findButton.addActionListener((ActionEvent e) -> {
+            FindText();
+        });
+    }
+
+    private void SuKienUndoRedo() {
+        Document doc = jTextAreaDiary.getDocument();
+        doc.addUndoableEditListener((UndoableEditEvent e) -> {
+            //System.out.println("Add edit");
+            undoManager.addEdit(e.getEdit());
+        });
+
+        InputMap im = jTextAreaDiary.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap am = jTextAreaDiary.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "Undo");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "Redo");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "FindText");
+        am.put("Undo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (undoManager.canUndo()) {
+                        undoManager.undo();
+                    }
+                } catch (CannotUndoException exp) {
+                    exp.printStackTrace();
+                }
+            }
+        });
+        am.put("Redo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (undoManager.canRedo()) {
+                        undoManager.redo();
+                    }
+                } catch (CannotUndoException exp) {
+                    exp.printStackTrace();
+                }
+            }
+        });
+        am.put("FindText", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (StringFind.equals("")) {
+                        jTextFindtext.requestFocus();
+                    } else {
+                        jTextFindtext.setText(StringFind);
+                        FindText();
+                    }
+                } catch (CannotUndoException exp) {
+                    exp.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private void LineNumber() {
+        jScrollPane.setRowHeaderView(lineNumberComponent);
+        lineNumberComponent.setAlignment(LineNumberComponent.CENTER_ALIGNMENT);
+        jTextAreaDiary.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void changedUpdate(DocumentEvent arg0) {
+                lineNumberComponent.adjustWidth();
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent arg0) {
+                lineNumberComponent.adjustWidth();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent arg0) {
+                lineNumberComponent.adjustWidth();
+            }
+        });
     }
 
     private void LoadJtreeThuMuc() throws ClassNotFoundException, SQLException {
@@ -582,7 +681,7 @@ public class FormNhatKy extends javax.swing.JFrame {
     }
 
     private void FindText() {
-        findButton.addActionListener((ActionEvent e) -> {
+        if (!jTextFindtext.getText().equals("")) {
             // Lấy văn bản cần tìm ... chuyển nó thành chữ thường để so sánh dễ dàng hơn
             String find = jTextFindtext.getText().toLowerCase();
             // Focus vào JtextArea, nếu không phần tô sáng sẽ không hiển thị
@@ -623,7 +722,9 @@ public class FormNhatKy extends javax.swing.JFrame {
                 } catch (BadLocationException exp) {
                 }
             }
-        });
+        } else {
+            jTextFindtext.requestFocus();
+        }
     }
 
     private void SetCusor() {
@@ -1034,6 +1135,11 @@ public class FormNhatKy extends javax.swing.JFrame {
 
     private void jTextAreaDiaryMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTextAreaDiaryMouseClicked
         jTextAreaDiary.requestFocus();
+        if (jTextAreaDiary.getSelectedText() != null) { // See if they selected something 
+            StringFind = jTextAreaDiary.getSelectedText();
+        } else {
+            StringFind = "";
+        }
     }//GEN-LAST:event_jTextAreaDiaryMouseClicked
 
     private void jTreeThuMucMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTreeThuMucMouseClicked

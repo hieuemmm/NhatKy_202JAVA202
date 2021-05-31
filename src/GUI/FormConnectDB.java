@@ -5,7 +5,7 @@
  */
 package GUI;
 
-import File_Liblary_MYSQL.ConnectMySQL;
+import Core.ConnectMySQL;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;

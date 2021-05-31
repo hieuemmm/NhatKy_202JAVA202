@@ -1,6 +1,6 @@
 package DAO;
 
-import static File_Liblary_MYSQL.ConnectMySQL.getJDBCConnection;
+import static Core.ConnectMySQL.getJDBCConnection;
 import NhatKy.NguoiDung;
 import com.mysql.jdbc.Connection;
 import java.sql.PreparedStatement;

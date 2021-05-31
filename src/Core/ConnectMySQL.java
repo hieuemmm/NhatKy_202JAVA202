@@ -1,4 +1,4 @@
-package File_Liblary_MYSQL;
+package Core;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;
