@@ -1,10 +1,7 @@
 package Views;
 
 import Controllers.NhatKyController;
-import static Views.FormNhatKy.defaultTableModel;
 import Class.NhatKy;
-import static java.awt.Color.blue;
-import static java.awt.Color.red;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -12,12 +9,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.scene.paint.Color;
-import javax.swing.JButton;
-import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
-import sun.awt.image.PixelConverter;
 
 /**
  *

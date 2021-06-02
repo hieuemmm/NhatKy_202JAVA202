@@ -56,26 +56,11 @@ public class NhatKyController {
     }
 
     public List<NhatKy> TimKiemNangCao(String TuKhoa, NguoiDung nguoidung) throws ClassNotFoundException, SQLException {
-        List<NhatKy> NhatKyTimThay = new ArrayList<NhatKy>();
+        List<NhatKy> NhatKyTimThay = new ArrayList<>();
         List<NhatKy> NhatKys = getAllNhatKyByTaiKhoan(nguoidung);
-        for (NhatKy nhatky : NhatKys) {
-            if (nhatky.getTenNhatKy().indexOf(TuKhoa)!=-1 ||nhatky.getNoiDung().indexOf(TuKhoa)!=-1 ||nhatky.getNgayTao().indexOf(TuKhoa)!=-1 ||nhatky.getNgayChinhSuaCuoiCung().indexOf(TuKhoa)!=-1 ){
-                NhatKyTimThay.add(nhatky);
-            }   
-        }
+        NhatKys.stream().filter(nhatky -> (nhatky.getTenNhatKy().contains(TuKhoa) ||nhatky.getNoiDung().contains(TuKhoa) ||nhatky.getNgayTao().contains(TuKhoa) ||nhatky.getNgayChinhSuaCuoiCung().contains(TuKhoa) )).forEachOrdered(nhatky -> {
+            NhatKyTimThay.add(nhatky);
+        });
         return NhatKyTimThay;
-    }
-
-    private int DemTu(String Root, String Sub) {
-        int lastIndex = 0;
-        int count = 0;
-        while (lastIndex != -1) {
-            lastIndex = Root.indexOf(Sub, lastIndex);
-            if (lastIndex != -1) {
-                count++;
-                lastIndex += Sub.length();
-            }
-        }
-        return count;
     }
 }

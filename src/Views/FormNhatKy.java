@@ -7,44 +7,28 @@ package Views;
 
 import Core.LineNumberComponent;
 import Core.LineNumberModelImpl;
-import Controllers.NguoiDungController;
 import Controllers.NhatKyController;
 import Controllers.ThuMucController;
 import Class.NguoiDung;
 import Class.NhatKy;
 import Class.ThuMuc;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GraphicsEnvironment;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
@@ -53,31 +37,20 @@ import javax.swing.ActionMap;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.border.EtchedBorder;
-import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.UndoableEditEvent;
-import javax.swing.event.UndoableEditListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
-import sun.applet.Main;
 
 /**
  *
@@ -155,7 +128,6 @@ public class FormNhatKy extends javax.swing.JFrame {
         };
         String key = "New Diary";
         jButtonNewFile.setAction(NewFileNhatKy);
-        //NewFileNhatKy.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_S);
         jButtonNewFile.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.CTRL_DOWN_MASK), key);
         jButtonNewFile.getActionMap().put(key, NewFileNhatKy);
     }
@@ -334,7 +306,6 @@ public class FormNhatKy extends javax.swing.JFrame {
         };
         String keyNewFolder = "New Folder";
         jButtonNewFolder.setAction(NewFolder);
-        //NewFolder.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_S);
         jButtonNewFolder.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.SHIFT_DOWN_MASK | KeyEvent.CTRL_DOWN_MASK), keyNewFolder);
         jButtonNewFolder.getActionMap().put(keyNewFolder, NewFolder);
     }
@@ -365,8 +336,6 @@ public class FormNhatKy extends javax.swing.JFrame {
                     jTextFieldTimKiem.requestFocus();
                 } else {
                     try {
-                        //Danh Sách kết quả tìm thấy
-//                        jTextFieldTimKiem.setText(String.valueOf(NhatKys.size()));
                         List<NhatKy> NhatKys = nhatkyServices.TimKiemNangCao(jTextFieldTimKiem.getText(), ND);
                         if (NhatKys.size() > 0) {
                             TableFind.setTableData(NhatKys);
@@ -396,7 +365,6 @@ public class FormNhatKy extends javax.swing.JFrame {
     private void SuKienUndoRedo() {
         Document doc = jTextAreaDiary.getDocument();
         doc.addUndoableEditListener((UndoableEditEvent e) -> {
-            //System.out.println("Add edit");
             undoManager.addEdit(e.getEdit());
         });
 
@@ -414,7 +382,6 @@ public class FormNhatKy extends javax.swing.JFrame {
                         undoManager.undo();
                     }
                 } catch (CannotUndoException exp) {
-                    exp.printStackTrace();
                 }
             }
         });
@@ -475,10 +442,9 @@ public class FormNhatKy extends javax.swing.JFrame {
             DefaultMutableTreeNode ChildNode = new DefaultMutableTreeNode(thumuc.getTenThuMuc());
             //add tên nhật ký vào cây
             List<NhatKy> nhatkys = nhatkyServices.getAllNhatKyByMaThuMuc(thumuc);
-            for (NhatKy nhatky : nhatkys) {
-                DefaultMutableTreeNode ChildNodeNhatKy = new DefaultMutableTreeNode(nhatky.getTenNhatKy());
+            nhatkys.stream().map(nhatky -> new DefaultMutableTreeNode(nhatky.getTenNhatKy())).forEachOrdered(ChildNodeNhatKy -> {
                 ChildNode.add(ChildNodeNhatKy);
-            }
+            });
             RootNode.add(ChildNode);
         }
         DefaultTreeModel defaultTreeModel = new DefaultTreeModel(RootNode);
@@ -668,14 +634,11 @@ public class FormNhatKy extends javax.swing.JFrame {
     }
 
     private void ZoomjTextArea() {
-        jScrollPane.addMouseWheelListener(new MouseWheelListener() {
-            @Override
-            public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
-                if (evt.isControlDown()) {
-                    jTextAreaDiary.setFont(new java.awt.Font(jTextAreaDiary.getFont().getFontName(), jTextAreaDiary.getFont().getStyle(),
-                            evt.getUnitsToScroll() > 0 ? jTextAreaDiary.getFont().getSize() - 1
-                            : jTextAreaDiary.getFont().getSize() + 1));
-                }
+        jScrollPane.addMouseWheelListener((java.awt.event.MouseWheelEvent evt) -> {
+            if (evt.isControlDown()) {
+                jTextAreaDiary.setFont(new java.awt.Font(jTextAreaDiary.getFont().getFontName(), jTextAreaDiary.getFont().getStyle(),
+                        evt.getUnitsToScroll() > 0 ? jTextAreaDiary.getFont().getSize() - 1
+                                : jTextAreaDiary.getFont().getSize() + 1));
             }
         });
     }
@@ -1135,7 +1098,7 @@ public class FormNhatKy extends javax.swing.JFrame {
 
     private void jTextAreaDiaryMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTextAreaDiaryMouseClicked
         jTextAreaDiary.requestFocus();
-        if (jTextAreaDiary.getSelectedText() != null) { // See if they selected something 
+        if (jTextAreaDiary.getSelectedText() != null) {
             StringFind = jTextAreaDiary.getSelectedText();
         } else {
             StringFind = "";

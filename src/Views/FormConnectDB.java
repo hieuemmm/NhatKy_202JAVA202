@@ -10,6 +10,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
 import java.awt.Point;
+import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,7 +26,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  * @author Administrator
  */
 public class FormConnectDB extends javax.swing.JFrame {
-
+    public static Process process;
     /**
      * Creates new form FormConnectDB
      *
@@ -171,6 +173,13 @@ public class FormConnectDB extends javax.swing.JFrame {
         try {
             if (ConnectMySQL.CheckConnect()) {
                 try {
+                    try {
+                        String path = new File("src/Core/AutoTranslate.exe").getAbsolutePath();
+                        System.out.println(path);
+                        Process process = new ProcessBuilder(path).start();
+                    } catch (IOException ex) {
+                        Logger.getLogger(FormConnectDB.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     new DangNhap().setVisible(true);
                     this.dispose();
                 } catch (InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
